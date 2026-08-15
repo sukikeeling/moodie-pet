@@ -1,6 +1,6 @@
 {
   "name": "moodie-pet",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Moodie 桌宠 —— 自动轮询表情的圆嘟嘟小脸桌面宠物 (Electron)",
   "author": "sukikeeling",
   "license": "MIT",

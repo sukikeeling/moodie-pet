@@ -1,11 +1,32 @@
-const { app, BrowserWindow, ipcMain, Menu, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, screen, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const LOG = path.join(__dirname, 'renderer.log');
-fs.writeFileSync(LOG, '');
+
+/* ============================================================
+   Moodie 桌宠 · 主进程
+   成熟结构参考：live2d-widget / electron 桌宠通用实践
+   - 单实例锁，避免重复启动
+   - 所有日志写 userData（打包后 __dirname 在只读 app.asar，写它会 EROFS 崩）
+   - uncaughtException 兜底：记日志 + 弹窗，绝不让进程"隐形崩溃"
+   - ready-to-show 后才 show，避免透明窗口闪现/未渲染
+   ============================================================ */
+
+const LOG = path.join(app.getPath('userData'), 'moodie.log');
+function log(msg) { try { fs.appendFileSync(LOG, `[${new Date().toISOString()}] ${msg}\n`); } catch (_) {} }
+try { fs.writeFileSync(LOG, ''); } catch (_) {}
+
+process.on('uncaughtException', err => {
+  const s = (err && err.stack) || String(err);
+  log('UNCAUGHT: ' + s);
+  try { dialog.showErrorBox('Moodie 桌宠出错了', '请把下面的信息反馈给开发者：\n\n' + s); } catch (_) {}
+});
+process.on('unhandledRejection', err => log('UNHANDLED-REJECTION: ' + ((err && err.stack) || String(err))));
+
+// 单实例锁：重复启动时把已有窗口顶起来，而不是再开一个
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) { app.quit(); }
 
 let win = null;
-// drag via absolute cursor screen pos (DPI-correct, unlike CSS movementX)
 let dragging = false, lastCursor = null;
 
 function createWindow() {
@@ -13,7 +34,8 @@ function createWindow() {
   const W = 250, H = 300;
   win = new BrowserWindow({
     width: W, height: H,
-    x: work.x + work.width - W - 30, y: work.y + work.height - H - 10,
+    x: work.x + work.width - W - 30,
+    y: work.y + work.height - H - 10,
     frame: false,
     transparent: true,
     resizable: false,
@@ -22,24 +44,27 @@ function createWindow() {
     skipTaskbar: true,
     hasShadow: false,
     backgroundColor: '#00000000',
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
     },
   });
-  // start click-through; renderer re-enables mouse over the pet body
+
+  // 桌面穿透：默认透明区放行鼠标，渲染器在指针进入宠物本体时再接管
   win.setIgnoreMouseEvents(true, { forward: true });
   win.loadFile(path.join(__dirname, 'pet.html'));
-  win.webContents.on('console-message', (_e, level, message, line, source) => {
-    fs.appendFileSync(LOG, `[${level}] ${message}  (${source}:${line})\n`);
-  });
-  win.webContents.on('render-process-gone', (_e, d) => fs.appendFileSync(LOG, `RENDER-GONE: ${JSON.stringify(d)}\n`));
-  win.webContents.on('did-fail-load', (_e, code, desc) => fs.appendFileSync(LOG, `FAIL-LOAD: ${code} ${desc}\n`));
+  win.once('ready-to-show', () => win.show());
+
+  win.webContents.on('console-message', (_e, level, message, line, source) =>
+    log(`[r${level}] ${message}  (${source}:${line})`));
+  win.webContents.on('render-process-gone', (_e, d) => log('RENDER-GONE: ' + JSON.stringify(d)));
+  win.webContents.on('did-fail-load', (_e, code, desc) => log('FAIL-LOAD: ' + code + ' ' + desc));
   win.on('closed', () => { win = null; });
 }
 
-// ---- drag: track cursor screen point, move window by the same delta ----
+/* ---- 拖动：按屏幕绝对光标位移移动窗口（DPI 无关，比 movementX 稳） ---- */
 ipcMain.on('pet:drag-start', () => { dragging = true; lastCursor = screen.getCursorScreenPoint(); });
 ipcMain.on('pet:drag-move', () => {
   if (!dragging || !win) return;
@@ -52,40 +77,41 @@ ipcMain.on('pet:drag-move', () => {
 });
 ipcMain.on('pet:drag-end', () => { dragging = false; lastCursor = null; });
 
-// ---- click-through toggle (transparent areas pass mouse to desktop) ----
+/* ---- 透明区点击穿透开关 ---- */
 ipcMain.on('pet:set-ignore', (_e, ignore) => {
   if (!win) return;
   win.setIgnoreMouseEvents(ignore, { forward: true });
 });
 
-// ---- native right-click context menu ----
+/* ---- 右键菜单 ---- */
 ipcMain.on('pet:menu', () => {
   if (!win) return;
+  const send = action => win.webContents.send('pet:menu-action', action);
   const menu = Menu.buildFromTemplate([
-    { label: '😊 换个心情', click: () => win.webContents.send('pet:menu-action', 'nextMood') },
-    { label: '🎲 随机换装', click: () => win.webContents.send('pet:menu-action', 'randomLook') },
+    { label: '😊 换个心情', click: () => send('nextMood') },
+    { label: '🎲 随机换装', click: () => send('randomLook') },
     { type: 'separator' },
     {
       label: '尺寸',
       submenu: [
-        { label: '缩小（×2/3）', click: () => win.webContents.send('pet:menu-action', 'size:minus') },
-        { label: '放大（×3/2）', click: () => win.webContents.send('pet:menu-action', 'size:plus') },
-        { label: '原始大小', click: () => win.webContents.send('pet:menu-action', 'size:reset') },
+        { label: '缩小（×2/3）', click: () => send('size:minus') },
+        { label: '放大（×3/2）', click: () => send('size:plus') },
+        { label: '原始大小', click: () => send('size:reset') },
       ],
     },
     {
       label: '配饰',
       submenu: [
-        { label: '👒 草帽', click: () => win.webContents.send('pet:menu-action', 'accessory:straw-hat') },
-        { label: '👓 眼镜', click: () => win.webContents.send('pet:menu-action', 'accessory:glasses') },
-        { label: '🎀 蝴蝶结', click: () => win.webContents.send('pet:menu-action', 'accessory:bowtie') },
-        { label: '🦸 披风', click: () => win.webContents.send('pet:menu-action', 'accessory:cape') },
+        { label: '👒 草帽', click: () => send('accessory:straw-hat') },
+        { label: '👓 眼镜', click: () => send('accessory:glasses') },
+        { label: '🎀 蝴蝶结', click: () => send('accessory:bowtie') },
+        { label: '🦸 披风', click: () => send('accessory:cape') },
         { type: 'separator' },
-        { label: '取消全部配饰', click: () => win.webContents.send('pet:menu-action', 'accessory:clear') },
+        { label: '取消全部配饰', click: () => send('accessory:clear') },
       ],
     },
     { type: 'separator' },
-    { label: '⏸️ 暂停 / 继续轮询', click: () => win.webContents.send('pet:menu-action', 'togglePause') },
+    { label: '⏸️ 暂停 / 继续轮询', click: () => send('togglePause') },
     { type: 'separator' },
     {
       label: '颜色',
@@ -95,7 +121,7 @@ ipcMain.on('pet:menu', () => {
         '桃粉 #ff2d8b', '纯黑 #000000',
       ].map(c => {
         const [name, hex] = c.split(' ');
-        return { label: name, click: () => win.webContents.send('pet:menu-action', 'color:' + hex) };
+        return { label: name, click: () => send('color:' + hex) };
       }),
     },
     { type: 'separator' },
@@ -107,5 +133,6 @@ ipcMain.on('pet:menu', () => {
 ipcMain.on('pet:quit', () => app.quit());
 
 app.whenReady().then(createWindow);
+app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.show(); } });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
