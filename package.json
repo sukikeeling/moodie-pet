@@ -1,0 +1,27 @@
+{
+  "name": "moodie-pet",
+  "version": "1.0.0",
+  "description": "Moodie 桌宠 —— 自动轮询表情的圆嘟嘟小脸桌面宠物 (Electron)",
+  "author": "sukikeeling",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sukikeeling/moodie-pet.git"
+  },
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [
+    "electron",
+    "desktop-pet",
+    "shimeji",
+    "grokbot",
+    "moodie",
+    "expression",
+    "windows"
+  ],
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}

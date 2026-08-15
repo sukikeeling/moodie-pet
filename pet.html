@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Moodie 桌宠</title>
+<style>
+  :root { --bot-color: #ff5d9e; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: transparent;
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  body { display: grid; place-items: center; cursor: grab; }
+  body.dragging { cursor: grabbing; }
+
+  .stage {
+    perspective: 900px;
+    position: relative;
+    width: 230px; height: 230px;
+    display: grid; place-items: center;
+    transform-origin: 50% 100%;
+    transition: transform .35s cubic-bezier(.34,1.45,.56,1);
+    --inv: 1;
+  }
+  .bot3d { transform-style: preserve-3d; will-change: transform; }
+  .bot {
+    width: 230px; height: 230px; overflow: visible;
+    filter: drop-shadow(0 16px 14px rgba(0,0,0,.42));
+    will-change: transform; display: block;
+  }
+  .body { fill: var(--bot-color); transition: fill .5s ease; }
+  .eye { fill: #fffdf7; }
+  .orbit { fill: none; stroke: #e36f3d; stroke-width: 1; stroke-dasharray: 5 6; opacity: 0; }
+  .viewer.guides .orbit { opacity: .55; }
+
+  /* mood speech tag（随宠物缩放反向缩放，保持可读） */
+  .mood-tag {
+    position: absolute; bottom: 100%; left: 50%; margin-bottom: 4px;
+    transform: translate(-50%, 0) scale(calc(.6 * var(--inv)));
+    transform-origin: 50% 100%;
+    background: #fff; color: #4a3a5e;
+    padding: 6px 15px; border-radius: 99px;
+    font-size: 13px; font-weight: 700; white-space: nowrap;
+    box-shadow: 0 6px 18px rgba(70,30,110,.28);
+    opacity: 0; pointer-events: none; max-width: 240px;
+    transition: opacity .35s ease, transform .45s cubic-bezier(.34,1.6,.56,1);
+  }
+  .mood-tag.show { opacity: 1; transform: translate(-50%, 0) scale(calc(1 * var(--inv))); }
+  .mood-tag::after {
+    content: ""; position: absolute; bottom: -5px; left: 50%;
+    transform: translateX(-50%) scale(var(--inv));
+    border: 6px solid transparent; border-top-color: #fff;
+  }
+
+  /* 尺寸控制（悬停显示，反向缩放保持可点） */
+  .size-ctrl {
+    position: absolute; top: 4px; right: 4px;
+    display: flex; gap: 5px;
+    transform: scale(var(--inv)); transform-origin: 100% 0;
+    opacity: 0; pointer-events: none; transition: opacity .25s ease;
+  }
+  .stage:hover .size-ctrl { opacity: 1; pointer-events: auto; }
+  .size-ctrl button {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.75);
+    background: rgba(255,255,255,.93); color: #4a3a5e;
+    font-size: 16px; font-weight: 700; line-height: 1;
+    box-shadow: 0 3px 10px rgba(70,30,110,.25); cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .size-ctrl button:hover { background: #fff; }
+  .size-ctrl button:active { transform: scale(.92); }
+
+  /* ===== body parts / accessories (ported) ===== */
+  .body-part, .accessory { display: none; }
+  .body-part { fill: none; stroke: var(--bot-color); stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; }
+  .body-part circle, .body-part ellipse { fill: var(--bot-color); stroke: none; }
+  .body-part.enabled, .accessory.enabled, .quick-wave #part-hands { display: block; }
+  .back-accessory { fill: #7657d8; opacity: .88; }
+  .front-accessory { stroke: #171813; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+  .front-accessory circle { fill: rgba(255,255,255,.12); }
+  #accessory-straw-hat { fill: #e9bd57; stroke: #b57b24; stroke-width: 3; }
+  #accessory-straw-hat .hat-band { fill: #d94b5d; stroke: none; }
+  #accessory-glasses { fill: none; }
+  #accessory-bowtie { fill: #ff2d8b; stroke: none; }
+
+  /* ===== state actions ===== */
+  .bot.act-bounce { animation: bounce .85s ease; }
+  .bot.act-tilt { animation: tilt .8s ease; }
+  .bot.act-scan #eyes { animation: scan .8s ease; }
+  .bot.act-turn { animation: turn .9s ease; }
+  .bot.act-pulse { animation: pulse .9s ease; }
+  .bot.act-glitch { animation: glitch .55s steps(2); }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 40%{transform:translateY(-34px) scale(.96,1.04)} 65%{transform:translateY(4px) scale(1.05,.94)} }
+  @keyframes tilt { 35%{transform:rotate(-19deg) translate(-8px,5px)} 70%{transform:rotate(8deg)} }
+  @keyframes scan { 0%,100%{transform:translate(0)} 30%{transform:translate(-24px,2px)} 70%{transform:translate(24px,-2px)} }
+  @keyframes turn { 0%,100%{transform:rotateY(0)} 48%{transform:rotateY(180deg) scale(.82)} }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 35%{transform:scale(1.08,.92)} 65%{transform:scale(.94,1.08)} }
+  @keyframes glitch { 0%,100%{transform:translate(0)} 25%{transform:translate(-9px,3px);filter:drop-shadow(8px 0 #e36f3d)} 50%{transform:translate(10px,-3px);filter:drop-shadow(-8px 0 #79e2d0)} 75%{transform:translate(-4px,1px)} }
+
+  /* ===== quick jelly actions ===== */
+  .bot.quick-bounce { animation: quick-bounce .75s cubic-bezier(.3,.8,.4,1); }
+  .bot.quick-shake { animation: quick-shake .65s ease; }
+  .bot.quick-peek { animation: quick-peek .9s ease; }
+  .bot.quick-pinch { animation: quick-pinch 1.12s cubic-bezier(.34,1.45,.56,1); }
+  .bot.quick-pinch #eyes { transform-box: fill-box; transform-origin: center; animation: pinch-eyes 1.12s cubic-bezier(.34,1.45,.56,1); }
+  .bot.quick-squish { animation: quick-squish .8s ease; }
+  .bot.quick-wave #hand-right { transform-box: fill-box; transform-origin: 0 0; animation: quick-wave .6s ease 2; }
+  @keyframes quick-bounce { 0%,100%{transform:translateY(0) scale(1)} 38%{transform:translateY(-48px) scale(.95,1.05)} 60%{transform:translateY(3px) scale(1.08,.9)} }
+  @keyframes quick-shake { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-13deg)} 40%{transform:rotate(13deg)} 60%{transform:rotate(-10deg)} 80%{transform:rotate(8deg)} }
+  @keyframes quick-peek { 0%,100%{transform:translateX(0) rotate(0)} 35%{transform:translateX(-78px) rotate(-16deg)} 70%{transform:translateX(62px) rotate(12deg)} }
+  @keyframes quick-pinch { 0%,100%{transform:scale(1)} 24%{transform:scale(.62,1.14)} 44%{transform:scale(1.13,.89)} 61%{transform:scale(.91,1.08)} 76%{transform:scale(1.05,.96)} 89%{transform:scale(.98,1.02)} }
+  @keyframes pinch-eyes { 0%,100%{transform:scaleX(1)} 24%{transform:scaleX(.56)} 44%{transform:scaleX(1.16)} 61%{transform:scaleX(.9)} }
+  @keyframes quick-squish { 0%,100%{transform:scale(1)} 30%{transform:scale(1.15,.72) translateY(20px)} 60%{transform:scale(.86,1.18) translateY(-14px)} }
+  @keyframes quick-wave { 0%,100%{transform:rotate(0)} 50%{transform:rotate(-70deg)} }
+</style>
+</head>
+<body>
+  <div class="stage" id="viewer">
+    <div class="size-ctrl">
+      <button type="button" id="sz-minus" title="缩小 1/3">－</button>
+      <button type="button" id="sz-reset" title="原始大小">○</button>
+      <button type="button" id="sz-plus" title="放大">＋</button>
+    </div>
+    <div class="mood-tag" id="mood-tag">待机</div>
+    <div class="bot3d" id="bot3d">
+      <svg class="bot" id="bot" viewBox="-28 -28 285 285" role="img" aria-label="Moodie 桌宠">
+        <defs>
+          <clipPath id="head-clip"><path id="shape-clip-path" d="M228.541 114.228C228.541 130.133 225.184 145.994 218.738 160.534C212.674 174.217 203.904 186.669 193.065 196.988C155.933 232.34 99.497 238.596 55.5255 212.24C45.097 205.99 35.6851 198.072 27.7451 188.866C19.1926 178.953 12.3686 167.569 7.65781 155.351C2.60712 142.264 0 128.257 0 114.228C0 98.3219 3.35751 82.4611 9.80315 67.9215C15.8672 54.2382 24.6377 41.7862 35.4767 31.4668C72.6081 -3.88483 129.044 -10.1413 173.016 16.2153C183.444 22.4653 192.856 30.3829 200.796 39.5896C209.349 49.5018 216.173 60.8859 220.883 73.1037C225.934 86.1906 228.541 100.198 228.541 114.228Z"/></clipPath>
+        </defs>
+        <ellipse class="orbit" cx="114" cy="115" rx="107" ry="38"/>
+        <g id="spring-group">
+          <g class="accessory back-accessory" id="accessory-cape"><path d="M25 79Q-2 119 13 210Q65 192 90 168Z"/><path d="M204 79Q231 119 216 210Q164 192 139 168Z"/></g>
+          <g class="body-part" id="part-antenna"><path d="M114 18V-5"/><circle cx="114" cy="-12" r="8"/></g>
+          <g class="body-part" id="part-tail"><path d="M205 154C246 151 254 181 230 198C216 208 214 220 227 228"/></g>
+          <g class="body-part" id="part-hands"><g id="hand-left"><path d="M25 132C5 136-8 148-17 165"/><circle cx="-20" cy="170" r="10"/></g><g id="hand-right"><path d="M204 132C224 136 237 148 246 165"/><circle cx="249" cy="170" r="10"/></g></g>
+          <g class="body-part" id="part-feet"><path d="M72 202V224"/><ellipse cx="62" cy="230" rx="24" ry="10"/><path d="M157 202V224"/><ellipse cx="167" cy="230" rx="24" ry="10"/></g>
+          <path class="body" id="shape-body-path" d="M228.541 114.228C228.541 130.133 225.184 145.994 218.738 160.534C212.674 174.217 203.904 186.669 193.065 196.988C155.933 232.34 99.497 238.596 55.5255 212.24C45.097 205.99 35.6851 198.072 27.7451 188.866C19.1926 178.953 12.3686 167.569 7.65781 155.351C2.60712 142.264 0 128.257 0 114.228C0 98.3219 3.35751 82.4611 9.80315 67.9215C15.8672 54.2382 24.6377 41.7862 35.4767 31.4668C72.6081 -3.88483 129.044 -10.1413 173.016 16.2153C183.444 22.4653 192.856 30.3829 200.796 39.5896C209.349 49.5018 216.173 60.8859 220.883 73.1037C225.934 86.1906 228.541 100.198 228.541 114.228Z"/>
+          <g clip-path="url(#head-clip)" id="eyes"><path class="eye" id="eye-0"/><path class="eye" id="eye-1"/></g>
+          <g class="accessory front-accessory" id="accessory-straw-hat"><path d="M63 28Q72-24 114-28Q156-24 165 28Z"/><ellipse cx="114" cy="31" rx="91" ry="18"/><path class="hat-band" d="M64 10Q114 22 164 10L166 27Q114 38 62 27Z"/></g>
+          <g class="accessory front-accessory" id="accessory-glasses"><circle cx="72" cy="108" r="37"/><circle cx="157" cy="108" r="37"/><path d="M109 106Q114 99 120 106M35 102L12 94M194 102L217 94"/></g>
+          <g class="accessory front-accessory" id="accessory-bowtie"><path d="M114 172L78 151Q62 143 64 176Q65 205 82 194L114 178Z"/><path d="M114 172L150 151Q166 143 164 176Q163 205 146 194L114 178Z"/><circle cx="114" cy="175" r="12"/></g>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+<script src="data.js"></script>
+<script>
+"use strict";
+/* ============================================================
+   Moodie 桌宠引擎 —— 移植自 moodie.html（精简：去除 UI，保留表现力）
+   数据：data.js（25 表情坐标 + 39 状态节奏/眨眼）
+   新增：自动轮询表情 / 3D 拖动转向+移动 / 桌面穿透点击
+   ============================================================ */
+const DATA = window.GROKBOT_ORIGINAL;
+const bot = document.querySelector('#bot');
+const bot3d = document.querySelector('#bot3d');
+const viewer = document.querySelector('#viewer');
+const moodTag = document.querySelector('#mood-tag');
+const eyeEls = [document.querySelector('#eye-0'), document.querySelector('#eye-1')];
+
+const stateNames = {sleeping:'睡眠',waking:'唤醒',idle:'待机',listening:'倾听',thinking:'思考',searching:'搜索',working:'工作',excited:'兴奋',surprised:'惊讶',suspicious:'怀疑',angry:'生气',drowsy:'困倦',happy:'开心',curious:'好奇',confused:'困惑',bored:'无聊',proud:'得意',shy:'害羞',sad:'难过',laughing:'大笑',scared:'害怕',playful:'调皮',celebrate:'庆祝',orbit:'轨道',radar:'雷达',progress:'进度',spawning:'诞生',humming:'哼唱',loading:'加载',dictating:'听写',writing:'书写',sending:'发送',receiving:'接收',uploading:'上传',notifying:'通知',alerting:'警报',dragging:'拖拽',bouncing:'弹跳','powering-down':'关机'};
+
+let expression = 0, current = DATA.EXPRESSIONS[0].map(r => r.map(p => [...p])), target = DATA.EXPRESSIONS[0],
+    morph = 1, velocity = 0, last = performance.now(), blinkStart = 0,
+    gazeX = 0, gazeY = 0, turn = 0, activeState = 'idle';
+
+// 符合工作流的语句（按状态随机抽取，显示在气泡里）
+const STATE_LINES = {
+  sleeping:['困了…先眯会儿','呼噜呼噜','别叫我了…'],
+  waking:['嗯？醒了','刚醒，缓缓','谁在叫我'],
+  idle:['发呆中…','戳我有惊喜','今天做点啥呢','没事做呀'],
+  listening:['我在听','你说我记','嗯嗯，继续'],
+  thinking:['让我想想…','嗯…有思路了','这个有点意思','容我三思'],
+  searching:['翻资料中…','搜搜看','找到一点线索了','正在翻箱倒柜'],
+  working:['埋头干活中…','在忙，别催','快好了快好了','专注模式 ON'],
+  excited:['好耶！','冲冲冲！','太棒了吧','嘿咻！'],
+  surprised:['咦？！','哇哦','没想到！'],
+  suspicious:['emmm…','有点蹊跷','我才不信呢'],
+  angry:['哼！','气鼓鼓','别惹我'],
+  drowsy:['哈欠～','眼皮打架了','撑不住了…'],
+  happy:['嘿嘿','今天状态不错','心情美美哒'],
+  curious:['这是什么？','让我瞅瞅','有意思～'],
+  confused:['啊这…','等等，啥情况','脑子转不过来'],
+  bored:['好无聊啊','没事做…','时间好慢'],
+  proud:['哼哼，拿下了','不错吧？','稳了'],
+  shy:['哎呀…','别盯着我看啦','害羞了'],
+  sad:['呜…','心情低落','有点丧'],
+  laughing:['哈哈哈','笑死我了','嘿嘿嘿'],
+  scared:['吓！','别吓我呀','瑟瑟发抖'],
+  playful:['来玩呀','皮一下','捉迷藏？'],
+  celebrate:['耶！搞定！','庆祝一下','圆满完工'],
+  orbit:['巡视一圈','轨道运行中','绕一绕'],
+  radar:['雷达扫描…','滴滴滴','探测中'],
+  progress:['进度 +1','一点点推进','稳扎稳打'],
+  spawning:['诞生！','我来啦','上线'],
+  humming:['哼哼～','啦啦啦','小曲儿走起'],
+  loading:['加载中…','转圈圈','缓冲一下'],
+  dictating:['你说我记','听写中','嗯，记下了'],
+  writing:['码字中…','写点东西','这段这么写…','文档 ing'],
+  sending:['发出去了！','发送中…','消息走你'],
+  receiving:['收到新消息','来活了','有新东西'],
+  uploading:['上传中…','传上去啦','推送到云端'],
+  notifying:['叮！提醒一下','有个通知','注意查收'],
+  alerting:['警报！','注意注意','红色预警'],
+  dragging:['哎哎别拽','我在移动','别拉我啦'],
+  bouncing:['蹦蹦蹦','弹一下','嗨起来'],
+  'powering-down':['收工啦','关机咯','下次见'],
+};
+const randLine = state => { const a = STATE_LINES[state] || [stateNames[state] || state]; return a[Math.floor(Math.random() * a.length)]; };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const centroid = ring => ring.reduce((a, p) => [a[0] + p[0] / ring.length, a[1] + p[1] / ring.length], [0, 0]);
+const path = ring => 'M' + ring.map(p => `${p[0].toFixed(2)} ${p[1].toFixed(2)}`).join('L') + 'Z';
+const smoothRing = (ring, tension = 1) => {
+  if (ring.length < 3) return path(ring);
+  const r = v => Math.round(v * 100) / 100;
+  const n = ring.length;
+  let d = `M${r(ring[0][0])},${r(ring[0][1])}`;
+  for (let i = 0; i < n; i++) {
+    const prev = ring[(i - 1 + n) % n], cur = ring[i], next = ring[(i + 1) % n], after = ring[(i + 2) % n];
+    const c1 = [cur[0] + ((next[0] - prev[0]) / 6) * tension, cur[1] + ((next[1] - prev[1]) / 6) * tension];
+    const c2 = [next[0] - ((after[0] - cur[0]) / 6) * tension, next[1] - ((after[1] - cur[1]) / 6) * tension];
+    d += `C${r(c1[0])},${r(c1[1])} ${r(c2[0])},${r(c2[1])} ${r(next[0])},${r(next[1])}`;
+  }
+  return d + 'Z';
+};
+
+/* ===== 弹簧身体 + 姿态 + 点击反应 ===== */
+class Spring {
+  constructor(value, stiffness = 210, damping = 22, mass = 0.8) {
+    this.x = value; this.v = 0;
+    this.stiffness = stiffness; this.damping = damping; this.mass = mass;
+    this.target = value;
+  }
+  step(target, dt) {
+    const a = (-this.stiffness * (this.x - target) - this.damping * this.v) / this.mass;
+    this.v += a * dt;
+    this.x += this.v * dt;
+    return this.x;
+  }
+}
+const PERF_PALETTE = [
+  { y: -2, scaleY: 0.92 },
+  { y: -5, rotate: 2, scaleX: 1.08, scaleY: 1.12 },
+  { y: 3, scaleX: 0.97, scaleY: 1.03 },
+  { rotate: 4, scaleX: 1.04 },
+  { rotate: -5, y: 1 },
+  { scaleX: 1.03, scaleY: 0.97, y: -1 },
+  { y: 4, rotate: -3, scaleX: 0.98, scaleY: 1.02 },
+  { rotate: 6, scaleY: 0.94, y: -3 },
+  { y: -6, scaleX: 0.94, scaleY: 1.12 },
+  { scaleX: 1.06, scaleY: 1.06, rotate: -2 },
+];
+const bodySprings = { y: new Spring(0, 170, 15), rotate: new Spring(0, 170, 15), scaleX: new Spring(1, 170, 15), scaleY: new Spring(1, 170, 15) };
+const bodyTilt = new Spring(0, 120, 18);
+const yawSpring = new Spring(0, 150, 16);   // 3D 转向（左右）
+const pitchSpring = new Spring(0, 150, 16); // 3D 俯仰（上下）
+const springGroup = document.querySelector('#spring-group');
+let reaction = null;
+const REACTION_FRAMES = {
+  bounce: { y: [0, -11, 3.5, -1, 0], rotate: [0, -2.5, 2, -0.7, 0], scale: [1, 0.96, 1.025, 0.99, 1] },
+  squash: { scaleX: [1, 1.045, 0.978, 1.012, 1], scaleY: [1, 0.95, 1.028, 0.992, 1], y: [0, 5, -3, 1, 0] },
+  tilt:   { rotate: [0, -8, 6, -2, 0], y: [0, 3, -2, 0.5, 0] },
+  spin:   { rotate: [0, 14, -12, 7, 0], scale: [1, 0.93, 1.045, 0.985, 1] },
+};
+const REACTION_TIMES = [0, 0.22, 0.58, 0.82, 1];
+const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+const STATE_REACTION = {
+  excited: 'bounce', happy: 'bounce', laughing: 'bounce', playful: 'bounce', celebrate: 'bounce', bouncing: 'bounce',
+  sad: 'squash', angry: 'squash', suspicious: 'squash', focused: 'squash', drowsy: 'squash',
+  listening: 'tilt', thinking: 'tilt', curious: 'tilt', confused: 'tilt', shy: 'tilt', dragging: 'tilt', bored: 'tilt', proud: 'tilt',
+  dizzy: 'spin', orbit: 'spin', radar: 'spin', progress: 'spin',
+};
+const EXPR_ACTIONS = ['tilt', 'bounce', 'squash', 'spin', 'none'];
+const STATE_LOOP = {
+  sleeping:{y:[3,1.2]},waking:{y:[2,2.4],rot:[1,2.2]},idle:{y:[1,1.8]},listening:{eyeX:[4,2.2],rot:[1.5,1.6]},
+  thinking:{rot:[3,1.4],y:[1.5,2.0]},searching:{eyeX:[10,1.6],rot:[2,1.8]},working:{y:[2,4.5],rot:[1,4]},
+  excited:{y:[6,3.2],sx:[0.03,3.2],sy:[0.03,3.2]},surprised:{sx:[0.04,4],sy:[0.04,4]},suspicious:{rot:[4,1.2],eyeX:[3,1.2]},
+  angry:{y:[2,3],rot:[3,3]},drowsy:{y:[3,1.1],rot:[2,0.9]},happy:{y:[4,2.8],rot:[2,2.8]},curious:{eyeX:[6,1.5],rot:[2,1.5]},
+  confused:{rot:[5,1.3],eyeX:[4,2.6]},bored:{y:[2,1.0],rot:[1,0.8]},proud:{y:[2,2.2],rot:[-2,2.2]},shy:{y:[2,2.5],rot:[3,2.5],sx:[0.02,2.5]},
+  sad:{y:[2,1.3],rot:[1,1.3]},laughing:{y:[7,4.2],sx:[0.04,4.2]},scared:{y:[3,5],sx:[0.03,5]},playful:{rot:[5,2.2],y:[3,2.2]},
+  celebrate:{y:[8,3.6],rot:[4,3.6],spin:true},orbit:{spin:true,y:[2,2]},radar:{eyeX:[12,1.2],eyeY:[8,1.2]},progress:{eyeX:[10,1.8]},
+  spawning:{sx:[0.06,3],sy:[0.06,3]},humming:{y:[2,2.6]},loading:{eyeY:[6,1.5],y:[3,1.5]},dictating:{rot:[2,2.8],y:[1.5,2.8]},
+  writing:{y:[1.5,3.2],rot:[1,3.2]},sending:{eyeX:[8,1.8],y:[2,1.8]},receiving:{eyeX:[-8,1.8],y:[2,1.8]},
+  uploading:{y:[3,2.4],eyeY:[4,2.4]},notifying:{y:[4,3.4],rot:[2,3.4]},alerting:{y:[3,4.5],sx:[0.03,4.5]},
+  dragging:{eyeX:[6,1.4],y:[2,1.4]},bouncing:{y:[10,3.0]},'powering-down':{y:[2,0.8],rot:[2,0.7]},
+};
+let eyePulse = 0;
+
+const GROKBOT_COLORS = [['cocoa','可可棕','#9a6737'],['red','活力红','#ff3347'],['orange','暖橙','#ff6a00'],['amber','琥珀','#ff9800'],['green','青绿','#08c77a'],['teal','湖蓝','#08b9a9'],['blue','经典蓝','#2f86ed'],['purple','梦幻紫','#8656f6'],['pink','桃粉','#ff2d8b'],['black','纯黑','#000000']];
+let selectedColor = GROKBOT_COLORS[8]; // 桃粉
+function applyColor(item){ selectedColor=item; document.documentElement.style.setProperty('--bot-color', item[2]); }
+
+/* ===== 尺寸控制（每次缩小 1/3） + 配饰开关 ===== */
+let petScale = 1;
+function applyScale(s){
+  petScale = Math.max(0.33, Math.min(2, s));
+  viewer.style.transform = `scale(${petScale})`;
+  viewer.style.setProperty('--inv', String(1 / petScale));
+}
+const ACCESSORY_IDS = ['straw-hat','glasses','bowtie','cape'];
+const selectedAccessories = new Set();
+function toggleAccessory(id){
+  if (id === 'clear') { ACCESSORY_IDS.forEach(d => document.querySelector('#accessory-'+d)?.classList.remove('enabled')); selectedAccessories.clear(); return; }
+  const el = document.querySelector('#accessory-' + id);
+  if (!el) return;
+  if (selectedAccessories.has(id)) { selectedAccessories.delete(id); el.classList.remove('enabled'); }
+  else { selectedAccessories.add(id); el.classList.add('enabled'); }
+}
+
+function rings() {
+  return current.map((ring, e) => ring.map((p, i) => [p[0] + (target[e][i][0] - p[0]) * clamp(morph, 0, 1), p[1] + (target[e][i][1] - p[1]) * clamp(morph, 0, 1)]));
+}
+function chooseExpression(index) {
+  current = rings(); target = DATA.EXPRESSIONS[index]; expression = index; morph = 0; velocity = 0;
+  const perf = PERF_PALETTE[index % PERF_PALETTE.length];
+  bodySprings.y.target = perf.y ?? 0;
+  bodySprings.rotate.target = perf.rotate ?? 0;
+  bodySprings.scaleX.target = perf.scaleX ?? 1;
+  bodySprings.scaleY.target = perf.scaleY ?? 1;
+  bodySprings.y.v = (perf.y ?? 0) * 0.22;
+  bodySprings.rotate.v = (perf.rotate ?? 0) * 0.18;
+  bodySprings.scaleX.v = ((perf.scaleX ?? 1) - 1) * 0.25;
+  bodySprings.scaleY.v = ((perf.scaleY ?? 1) - 1) * 0.25;
+  const actType = STATE_REACTION[activeState] || EXPR_ACTIONS[index % EXPR_ACTIONS.length];
+  if (actType !== 'none') reaction = { type: actType, t: 0, dur: 620 };
+  eyePulse = 1;
+  blink();
+}
+function blinkScale(now) {
+  if (!blinkStart) return 1;
+  const t = (now - blinkStart) / 320;
+  if (t >= 1) { blinkStart = 0; return 1; }
+  return Math.max(t < .42 ? 1 - t / .42 : (t - .42) / .58, .04);
+}
+function blink() { blinkStart = performance.now(); }
+
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, .1);
+  last = now;
+  velocity += (-10 * velocity - 36 * (morph - 1)) * dt;
+  morph += velocity * dt;
+  if (!Number.isFinite(morph)) { morph = 1; velocity = 0; }
+  const shown = rings(), bs = blinkScale(now), rad = turn * Math.PI / 180;
+  eyePulse = Math.max(0, eyePulse - dt * 3.2);
+  const pulseScale = 1 + Math.sin(eyePulse * Math.PI) * 0.14;
+  const loop = STATE_LOOP[activeState] || null;
+  let loopEyeX = 0, loopEyeY = 0;
+  if (loop) {
+    const t = now / 1000;
+    if (loop.eyeX) loopEyeX = Math.sin(t * loop.eyeX[1]) * loop.eyeX[0];
+    if (loop.eyeY) loopEyeY = Math.sin(t * loop.eyeY[1]) * loop.eyeY[0];
+  }
+  shown.forEach((ring, i) => {
+    const c = centroid(ring),
+      base = Math.asin(clamp((c[0] - 114.2705) / 105, -1, 1)),
+      longitude = base + rad,
+      depth = Math.cos(longitude),
+      perspective = Math.max(depth, .02) / Math.max(Math.cos(base), .02),
+      x = 114.2705 + 105 * Math.sin(longitude) + gazeX + loopEyeX,
+      y = c[1] + gazeY + loopEyeY;
+    eyeEls[i].setAttribute('d', smoothRing(ring));
+    eyeEls[i].setAttribute('transform', `translate(${x} ${y}) scale(${clamp(perspective, .02, 2.4) * pulseScale} ${bs}) translate(${-c[0]} ${-c[1]})`);
+    eyeEls[i].style.opacity = depth > .02 ? '1' : '0';
+  });
+
+  const bodyY = bodySprings.y.step(bodySprings.y.target, dt);
+  const bodyRot = bodySprings.rotate.step(bodySprings.rotate.target, dt);
+  const bodySX = bodySprings.scaleX.step(bodySprings.scaleX.target, dt);
+  const bodySY = bodySprings.scaleY.step(bodySprings.scaleY.target, dt);
+  const t = now / 1000;
+  const breathY = Math.sin(t * 2.1) * 1.4;
+  const breathRot = Math.sin(t * 1.7) * 0.6;
+  const breathScale = 1 + Math.sin(t * 2.6) * 0.008;
+  const tiltVal = bodyTilt.step(bodyTilt.target ?? 0, dt);
+
+  let rY = 0, rRot = 0, rScale = 1, rSX = 1, rSY = 1;
+  if (reaction) {
+    reaction.t += dt * 1000;
+    const p = clamp(reaction.t / reaction.dur, 0, 1);
+    const frames = REACTION_FRAMES[reaction.type];
+    const evalF = arr => {
+      for (let i = 1; i < REACTION_TIMES.length; i++) {
+        if (p <= REACTION_TIMES[i]) {
+          const local = (p - REACTION_TIMES[i - 1]) / (REACTION_TIMES[i] - REACTION_TIMES[i - 1]);
+          return arr[i - 1] + (arr[i] - arr[i - 1]) * easeOutCubic(local);
+        }
+      }
+      return arr[arr.length - 1];
+    };
+    if (frames) {
+      if (frames.y) rY = evalF(frames.y);
+      if (frames.rotate) rRot = evalF(frames.rotate);
+      if (frames.scale) rScale = evalF(frames.scale);
+      if (frames.scaleX) rSX = evalF(frames.scaleX);
+      if (frames.scaleY) rSY = evalF(frames.scaleY);
+    }
+    if (p >= 1) reaction = null;
+  }
+
+  let loopY = 0, loopRot = 0, loopSX = 1, loopSY = 1;
+  if (loop) {
+    const tt = now / 1000;
+    if (loop.y) loopY = Math.sin(tt * loop.y[1]) * loop.y[0];
+    if (loop.rot) loopRot = Math.sin(tt * loop.rot[1]) * loop.rot[0];
+    if (loop.sx) loopSX = 1 + Math.sin(tt * loop.sx[1]) * loop.sx[0];
+    if (loop.sy) loopSY = 1 + Math.sin(tt * loop.sy[1]) * loop.sy[0];
+    if (loop.spin) loopRot = (now * 0.05) % 360;
+  }
+
+  const finalY = bodyY + rY + breathY + loopY;
+  const finalRot = bodyRot + rRot + breathRot + tiltVal + loopRot;
+  const finalSX = bodySX * rSX * rScale * breathScale * loopSX;
+  const finalSY = bodySY * rSY * rScale * (2 - breathScale) * loopSY;
+  springGroup.setAttribute('transform',
+    `translate(0 ${finalY.toFixed(2)}) rotate(${finalRot.toFixed(2)} 114 114) scale(${finalSX.toFixed(3)} ${finalSY.toFixed(3)})`);
+
+  // 3D 转向（拖动时驱动，平时回正）
+  const yaw = yawSpring.step(yawSpring.target, dt);
+  const pitch = pitchSpring.step(pitchSpring.target, dt);
+  bot3d.style.transform = `rotateY(${yaw.toFixed(2)}deg) rotateX(${pitch.toFixed(2)}deg)`;
+
+  requestAnimationFrame(frame);
+}
+
+/* ===== 状态动作（一次性 CSS 动画） ===== */
+function stateMotion(name) {
+  const bounce = ['excited','happy','laughing','playful','celebrate','bouncing'],
+    tilt = ['listening','thinking','curious','confused','shy','dragging'],
+    scan = ['searching','working','radar','dictating','writing','uploading'],
+    turning = ['orbit','spawning','sending','receiving'],
+    pulse = ['sleeping','drowsy','bored','humming','loading','progress','powering-down'];
+  let cls = 'glitch';
+  if (bounce.includes(name)) cls = 'bounce';
+  else if (tilt.includes(name)) cls = 'tilt';
+  else if (scan.includes(name)) cls = 'scan';
+  else if (turning.includes(name)) { cls = 'turn'; viewer.classList.add('guides'); }
+  else if (pulse.includes(name)) cls = 'pulse';
+  bot.classList.remove('act-bounce','act-tilt','act-scan','act-turn','act-pulse','act-glitch');
+  void bot.offsetWidth;
+  bot.classList.add(`act-${cls}`);
+  setTimeout(() => { bot.classList.remove(`act-${cls}`); viewer.classList.remove('guides'); }, 1100);
+}
+
+/* ===== 快捷果冻动作 ===== */
+const quickClasses = ['quick-bounce','quick-shake','quick-peek','quick-pinch','quick-squish','quick-wave'];
+function playQuickAction(name) {
+  [...quickClasses, 'act-bounce','act-tilt','act-scan','act-turn','act-pulse','act-glitch'].forEach(cls => bot.classList.remove(cls));
+  viewer.classList.remove('guides');
+  void bot.offsetWidth;
+  bot.classList.add(`quick-${name}`);
+  setTimeout(() => bot.classList.remove(`quick-${name}`), name === 'wave' ? 1350 : name === 'pinch' ? 1200 : 950);
+}
+
+/* ===== 自动轮询：状态切换 + 表情循环 + 眨眼 + 偶发小动作 ===== */
+const ALL_STATES = Object.values(DATA.GROUPS).flat();
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+let autoPaused = false;
+let stateTimer = null, exprTimer = null, blinkTimer = null, tagTimer = null, chatterTimer = null;
+
+function showMood(text) {
+  moodTag.textContent = text;
+  moodTag.classList.add('show');
+  clearTimeout(tagTimer);
+  tagTimer = setTimeout(() => moodTag.classList.remove('show'), 3000);
+}
+const showLine = state => showMood(randLine(state));
+
+// 偏向工作流：约四成从"产品流程"组里挑，让码字/发送/接收等状态更常出现
+function pickState() {
+  if (Math.random() < 0.4) return pick(DATA.GROUPS['Cycle produit']);
+  return pick(ALL_STATES);
+}
+function petSetState(name) {
+  activeState = name;
+  const pool = DATA.POOLS[name];
+  chooseExpression(pool[Math.floor(Math.random() * pool.length)]);
+  stateMotion(name);
+  showLine(name);
+}
+function cycleExpr() {
+  clearTimeout(exprTimer);
+  if (autoPaused) { exprTimer = setTimeout(cycleExpr, 2000); return; }
+  const pool = DATA.POOLS[activeState];
+  let idx = pick(pool);
+  if (idx === expression && pool.length > 1) idx = pick(pool);
+  chooseExpression(idx);
+  const cad = DATA.EXPR_CADENCE[activeState] || [3000, 5000];
+  exprTimer = setTimeout(cycleExpr, rand(cad[0], cad[1]));
+}
+function changeState() {
+  clearTimeout(stateTimer);
+  if (autoPaused) { stateTimer = setTimeout(changeState, 3000); return; }
+  let s; do { s = pickState(); } while (s === activeState && ALL_STATES.length > 1);
+  petSetState(s);
+  if (Math.random() < 0.28) playQuickAction(pick(['bounce','peek','wave','squish','shake']));
+  if (Math.random() < 0.14) applyColor(pick(GROKBOT_COLORS));
+  stateTimer = setTimeout(changeState, rand(7000, 13000));
+}
+function scheduleBlinkPet() {
+  clearTimeout(blinkTimer);
+  blinkTimer = setTimeout(() => {
+    if (!autoPaused && DATA.BLINK[activeState]) blink();
+    scheduleBlinkPet();
+  }, rand(2200, 5200));
+}
+// 偶尔自言自语（工作流语句），让小脸更"活"
+function scheduleChatter() {
+  clearTimeout(chatterTimer);
+  chatterTimer = setTimeout(() => {
+    if (!autoPaused && !dragging) showLine(activeState);
+    scheduleChatter();
+  }, rand(7000, 14000));
+}
+function togglePause() {
+  autoPaused = !autoPaused;
+  showMood(autoPaused ? '休息中…' : '继续啦~');
+  return autoPaused;
+}
+
+/* ===== 视线跟随 + 点击反应 + 3D 拖动转向/移动 ===== */
+let dragging = false, moveDist = 0, dragYaw = 0, dragPitch = 0;
+
+viewer.addEventListener('pointermove', (e) => {
+  const r = bot.getBoundingClientRect();
+  const dx = clamp(((e.clientX - (r.left + r.width / 2)) / r.width) * 2, -.6, .6);
+  const dy = clamp(((e.clientY - (r.top + r.height / 2)) / r.height) * 2, -.6, .6);
+  gazeX = dx * 22; gazeY = dy * 14;
+  bodyTilt.target = clamp(dx * 4, -4, 4);
+});
+viewer.addEventListener('pointerleave', () => { gazeX = 0; gazeY = 0; bodyTilt.target = 0; });
+
+bot.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0) return;
+  dragging = true; moveDist = 0;
+  dragYaw = yawSpring.x; dragPitch = pitchSpring.x;
+  document.body.classList.add('dragging');
+  if (window.electronAPI && window.electronAPI.dragStart) window.electronAPI.dragStart();
+  try { bot.setPointerCapture(e.pointerId); } catch (_) {}
+});
+window.addEventListener('pointermove', (e) => {
+  if (!dragging) return;
+  moveDist += Math.abs(e.movementX) + Math.abs(e.movementY);
+  dragYaw = clamp(dragYaw + e.movementX * 0.55, -44, 44);
+  dragPitch = clamp(dragPitch + e.movementY * 0.42, -26, 26);
+  yawSpring.target = dragYaw;
+  pitchSpring.target = dragPitch;
+  if (window.electronAPI && window.electronAPI.dragMove) window.electronAPI.dragMove();
+});
+function endDrag() {
+  if (!dragging) return;
+  dragging = false;
+  document.body.classList.remove('dragging');
+  yawSpring.target = 0; pitchSpring.target = 0;
+  if (window.electronAPI && window.electronAPI.dragEnd) window.electronAPI.dragEnd();
+  if (moveDist < 6) {
+    // 视为点击 → 反应 + 眨眼
+    const type = STATE_REACTION[activeState] || 'bounce';
+    reaction = { type, t: 0, dur: 620 };
+    eyePulse = 1; blink();
+  }
+}
+window.addEventListener('pointerup', endDrag);
+window.addEventListener('pointercancel', endDrag);
+
+/* 右键菜单（Electron）/ 浏览器提示 */
+viewer.addEventListener('contextmenu', (e) => {
+  if (window.electronAPI && window.electronAPI.showMenu) {
+    e.preventDefault();
+    window.electronAPI.showMenu();
+  }
+});
+
+/* ===== 桌面穿透：仅在宠物本体上接收鼠标，透明区放行 ===== */
+let lastIgnore = false;
+if (window.electronAPI && window.electronAPI.setIgnore) {
+  document.addEventListener('mousemove', (e) => {
+    if (dragging) return; // 拖动期间不切换穿透，避免中断
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const onPet = !!(el && (el.closest('#bot') || el.closest('.mood-tag') || el.closest('.size-ctrl')));
+    if (onPet === lastIgnore) return;
+    lastIgnore = onPet;
+    window.electronAPI.setIgnore(!onPet);
+    if (!onPet) { gazeX = 0; gazeY = 0; bodyTilt.target = 0; }
+  });
+}
+
+/* ===== 初始化 ===== */
+applyColor(selectedColor);
+applyScale(1);
+chooseExpression(0);
+activeState = 'idle';
+showMood('我上线啦~');
+requestAnimationFrame(frame);
+// 尺寸按钮
+document.querySelector('#sz-minus').addEventListener('click', () => applyScale(petScale * 2/3));
+document.querySelector('#sz-plus').addEventListener('click', () => applyScale(petScale * 3/2));
+document.querySelector('#sz-reset').addEventListener('click', () => applyScale(1));
+// 启动自动轮询 + 自言自语
+cycleExpr();
+changeState();
+scheduleBlinkPet();
+scheduleChatter();
+
+/* ===== 给菜单/外部调用的接口 ===== */
+function applyColorByHex(hex) {
+  const item = GROKBOT_COLORS.find(c => c[2].toLowerCase() === hex.toLowerCase());
+  if (item) applyColor(item);
+  else { document.documentElement.style.setProperty('--bot-color', hex); }
+}
+window.moodiePet = {
+  nextMood: () => { const s = pick(ALL_STATES.filter(x => x !== activeState)) || pick(ALL_STATES); petSetState(s); },
+  randomLook: () => { applyColor(pick(GROKBOT_COLORS)); chooseExpression(Math.floor(Math.random() * DATA.EXPRESSIONS.length)); playQuickAction(pick(['bounce','peek','wave','squish','shake'])); },
+  togglePause,
+  quit: () => { if (window.electronAPI && window.electronAPI.quit) window.electronAPI.quit(); },
+};
+// Electron 右键菜单回调
+if (window.electronAPI && window.electronAPI.onMenuAction) {
+  window.electronAPI.onMenuAction((action) => {
+    if (action.indexOf('color:') === 0) { applyColorByHex(action.slice(6)); showMood('换色~'); }
+    else if (action.indexOf('accessory:') === 0) { toggleAccessory(action.slice(10)); }
+    else if (action.indexOf('size:') === 0) {
+      const v = action.slice(5);
+      if (v === 'minus') applyScale(petScale * 2/3);
+      else if (v === 'plus') applyScale(petScale * 3/2);
+      else applyScale(1);
+    }
+    else if (window.moodiePet[action]) { window.moodiePet[action](); }
+  });
+}
+</script>
+</body>
+</html>
