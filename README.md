@@ -4,6 +4,8 @@
 
 ![Moodie 桌宠](docs/preview.svg)
 
+> 🌐 **[在线试玩](https://sukikeeling.github.io/moodie-pet/)** · ⬇ **[下载 Windows 免安装版](https://github.com/sukikeeling/moodie-pet/releases)**
+
 基于 [moodie.html](https://github.com/sukikeeling/moodie-html) 的 GrokBot 小脸，做成 Windows 桌面宠物（Electron）。它会在屏幕角落一直陪着你，表情自动轮播，偶尔冒泡说话。
 
 ## ✨ 特性
