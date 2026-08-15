@@ -33,6 +33,9 @@
     "directories": {
       "output": "dist"
     },
+    "electronDownload": {
+      "isVerifyChecksum": false
+    },
     "files": [
       "main.js",
       "preload.js",

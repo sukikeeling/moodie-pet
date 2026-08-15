@@ -3,3 +3,6 @@ node_modules/
 renderer.log
 .claude/
 *.local
+dist/
+.eb-cache/
+.eb-7zip/
