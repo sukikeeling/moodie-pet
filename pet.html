@@ -78,7 +78,7 @@
   .body-part, .accessory { display: none; }
   .body-part { fill: none; stroke: var(--bot-color); stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; }
   .body-part circle, .body-part ellipse { fill: var(--bot-color); stroke: none; }
-  .body-part.enabled, .accessory.enabled, .quick-wave #part-hands { display: block; }
+  .body-part.enabled, .accessory.enabled, .quick-wave #part-hands, .quick-run #part-feet { display: block; }
   .back-accessory { fill: #7657d8; opacity: .88; }
   .front-accessory { stroke: #171813; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
   .front-accessory circle { fill: rgba(255,255,255,.12); }
@@ -116,6 +116,10 @@
   @keyframes pinch-eyes { 0%,100%{transform:scaleX(1)} 24%{transform:scaleX(.56)} 44%{transform:scaleX(1.16)} 61%{transform:scaleX(.9)} }
   @keyframes quick-squish { 0%,100%{transform:scale(1)} 30%{transform:scale(1.15,.72) translateY(20px)} 60%{transform:scale(.86,1.18) translateY(-14px)} }
   @keyframes quick-wave { 0%,100%{transform:rotate(0)} 50%{transform:rotate(-70deg)} }
+  .bot.quick-run { animation: quick-run .32s ease-in-out infinite; }
+  @keyframes quick-run { 0%,100%{transform:translateY(0) scale(1,.98)} 25%{transform:translateY(-6px) scale(.98,1.04)} 50%{transform:translateY(0) scale(1.02,.96)} 75%{transform:translateY(-4px) scale(.99,1.03)} }
+  .bot.quick-celebrate { animation: quick-celebrate 1s ease; }
+  @keyframes quick-celebrate { 0%,100%{transform:translateY(0) scale(1,1)} 30%{transform:translateY(-26px) scale(.94,1.08)} 55%{transform:translateY(2px) scale(1.06,.92)} 80%{transform:translateY(-12px) scale(.97,1.04)} }
 
   /* ===== 状态特效层（轨道激光 / 雷达波纹 / 加载弧 / 警报脉冲 / 扫描光束 + 粒子） ===== */
   #fx { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; overflow:visible; z-index:0; }
@@ -172,11 +176,6 @@
 </head>
 <body>
   <div class="stage" id="viewer">
-    <div class="size-ctrl">
-      <button type="button" id="sz-minus" title="缩小 1/3">－</button>
-      <button type="button" id="sz-reset" title="原始大小">○</button>
-      <button type="button" id="sz-plus" title="放大">＋</button>
-    </div>
     <div class="mood-tag" id="mood-tag">待机</div>
     <div id="fx"></div>
     <div class="bot3d" id="bot3d">
@@ -222,47 +221,47 @@ let expression = 0, current = DATA.EXPRESSIONS[0].map(r => r.map(p => [...p])), 
     morph = 1, velocity = 0, last = performance.now(), blinkStart = 0,
     gazeX = 0, gazeY = 0, turn = 0, activeState = 'idle';
 
-// 符合工作流的语句（按状态随机抽取，显示在气泡里）
+// 可爱俏皮傲娇台词 · 办公/代码/陪伴定位 · 常有小主人互动
 const STATE_LINES = {
-  sleeping:['困了…先眯会儿','呼噜呼噜','别叫我了…'],
-  waking:['嗯？醒了','刚醒，缓缓','谁在叫我'],
-  idle:['发呆中…','戳我有惊喜','今天做点啥呢','没事做呀'],
-  listening:['我在听','你说我记','嗯嗯，继续'],
-  thinking:['让我想想…','嗯…有思路了','这个有点意思','容我三思'],
-  searching:['翻资料中…','搜搜看','找到一点线索了','正在翻箱倒柜'],
-  working:['埋头干活中…','在忙，别催','快好了快好了','专注模式 ON'],
-  excited:['好耶！','冲冲冲！','太棒了吧','嘿咻！'],
-  surprised:['咦？！','哇哦','没想到！'],
-  suspicious:['emmm…','有点蹊跷','我才不信呢'],
-  angry:['哼！','气鼓鼓','别惹我'],
-  drowsy:['哈欠～','眼皮打架了','撑不住了…'],
-  happy:['嘿嘿','今天状态不错','心情美美哒'],
-  curious:['这是什么？','让我瞅瞅','有意思～'],
-  confused:['啊这…','等等，啥情况','脑子转不过来'],
-  bored:['好无聊啊','没事做…','时间好慢'],
-  proud:['哼哼，拿下了','不错吧？','稳了'],
-  shy:['哎呀…','别盯着我看啦','害羞了'],
-  sad:['呜…','心情低落','有点丧'],
-  laughing:['哈哈哈','笑死我了','嘿嘿嘿'],
-  scared:['吓！','别吓我呀','瑟瑟发抖'],
-  playful:['来玩呀','皮一下','捉迷藏？'],
-  celebrate:['耶！搞定！','庆祝一下','圆满完工'],
-  orbit:['巡视一圈','轨道运行中','绕一绕'],
-  radar:['雷达扫描…','滴滴滴','探测中'],
-  progress:['进度 +1','一点点推进','稳扎稳打'],
-  spawning:['诞生！','我来啦','上线'],
-  humming:['哼哼～','啦啦啦','小曲儿走起'],
-  loading:['加载中…','转圈圈','缓冲一下'],
-  dictating:['你说我记','听写中','嗯，记下了'],
-  writing:['码字中…','写点东西','这段这么写…','文档 ing'],
-  sending:['发出去了！','发送中…','消息走你'],
-  receiving:['收到新消息','来活了','有新东西'],
-  uploading:['上传中…','传上去啦','推送到云端'],
-  notifying:['叮！提醒一下','有个通知','注意查收'],
-  alerting:['警报！','注意注意','红色预警'],
-  dragging:['哎哎别拽','我在移动','别拉我啦'],
-  bouncing:['蹦蹦蹦','弹一下','嗨起来'],
-  'powering-down':['收工啦','关机咯','下次见'],
+  sleeping:['小主人…我先眯一会儿…','呼噜…梦到在摸鱼…','别吵我啦，困死啦～'],
+  waking:['唔…小主人来啦？','眼睛睁不开…再睡五分钟嘛','啊——早安！才不是在等你呢'],
+  idle:['小主人，戳我一下嘛～','发呆中…想小主人了','今天也要一起加油呀','哼，没人理我…'],
+  listening:['我在听我在听！','小主人说，我记','嗯嗯，然后呢然后呢？'],
+  thinking:['让我想想…','唔…有思路了！','这个嘛…小主人等我一下','脑细胞疯狂运转中'],
+  searching:['翻箱倒柜找资料～','搜搜看！','诶？找到点线索了','小主人要的东西在不在…'],
+  working:['埋头苦干中…别催！','快好了快好了～','专注模式 ON！','小主人先忙，我也在努力呀'],
+  excited:['好耶！好耶！','冲冲冲～','太棒了吧！','嘿嘿开心得要转圈圈'],
+  surprised:['咦？！','哇哦——','小主人你居然…！','吓我一跳！'],
+  suspicious:['emmm…有点东西','蹊跷，很蹊跷','哼，我才不信呢','小主人你是不是瞒着我'],
+  angry:['哼！气鼓鼓！','不理你了！','才不是生气，是娇','别惹我，会咬人的哦'],
+  drowsy:['哈欠～眼皮打架了','撑不住了…小主人我趴会儿','好困好困…再五分钟嘛'],
+  happy:['嘿嘿～心情美美哒','和小主人一起真开心','开心得冒泡泡～'],
+  curious:['这是什么呀？','让我瞅瞅～','小主人这是啥？有意思','凑近看看…'],
+  confused:['啊这…？','等等，啥情况','脑壳转不过来了…','小主人我懵了'],
+  bored:['好无聊啊～','时间怎么这么慢','小主人理理我嘛…','无聊到长蘑菇了'],
+  proud:['哼哼，拿下了！','不错吧？夸我夸我','稳了～小主人给我发小红花不'],
+  shy:['哎呀…别盯着我看啦','害羞了啦…','小主人太直接了呜','脸红…才没有'],
+  sad:['呜…心情有点低','小主人…抱抱我好不好','有点丧…不是你的错啦'],
+  laughing:['哈哈哈！','笑死我了嘿嘿','小主人你逗死我了','嘿嘿嘿～'],
+  scared:['吓！','别吓我呀～','瑟瑟发抖…小主人保护我','哇啊！'],
+  playful:['来玩呀～','皮一下很开心','捉迷藏？小主人你找我','嘿嘿来追我呀'],
+  celebrate:['耶！搞定！','太棒啦✨庆祝！','圆满完工！小主人快夸我','放烟花～呼呼'],
+  orbit:['巡视一圈～','轨道运行中','绕绕绕…我替小主人看场子','滴滴，巡航中'],
+  radar:['雷达扫描…','滴滴滴～探测中','发现小主人！','搜索信号中…'],
+  progress:['进度 +1～','一点点推进，稳！','稳扎稳打','又近了一步嘿'],
+  spawning:['我来啦！','上线！','小主人我好醒啦','诞生～'],
+  humming:['哼哼～','啦啦啦～','小曲儿走起～','哼的小主人听不听嘛'],
+  loading:['加载中…','转圈圈～','缓冲一下嘛小主人','读条中…耐心点啦'],
+  dictating:['你说我记～','听写中','嗯嗯，记下了','小主人说慢点啦'],
+  writing:['码字中…','写点东西','这段这么写…','文档 ing～小主人别催'],
+  sending:['发出去了！','发送中…','消息走你～','叮——寄出去了'],
+  receiving:['收到新消息！','来活咯','有新东西～','小主人有你的快递'],
+  uploading:['上传中…','传上去啦～','推送到云端','嗖——飞上去了'],
+  notifying:['叮！提醒一下','有个通知～','小主人注意查收','叮咚～'],
+  alerting:['警报！警报！','注意注意！','红色预警！小主人快看','滴滴滴！出事啦'],
+  dragging:['哎哎别拽我！','我在移动啦','别拉我呀小主人','呜…被提溜走了'],
+  bouncing:['蹦蹦蹦！','弹一下～','嗨起来！','蹦得老高了嘿嘿'],
+  'powering-down':['收工啦～','关机咯','下次见小主人！','晚安，明天见嘛'],
 };
 const randLine = state => { const a = STATE_LINES[state] || [stateNames[state] || state]; return a[Math.floor(Math.random() * a.length)]; };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -347,6 +346,27 @@ let eyePulse = 0;
 const GROKBOT_COLORS = [['cocoa','可可棕','#9a6737'],['red','活力红','#ff3347'],['orange','暖橙','#ff6a00'],['amber','琥珀','#ff9800'],['green','青绿','#08c77a'],['teal','湖蓝','#08b9a9'],['blue','经典蓝','#2f86ed'],['purple','梦幻紫','#8656f6'],['pink','桃粉','#ff2d8b'],['black','纯黑','#000000']];
 let selectedColor = GROKBOT_COLORS[8]; // 桃粉
 function applyColor(item){ selectedColor=item; document.documentElement.style.setProperty('--bot-color', item[2]); }
+
+// 身体形状（右键可选）
+const GROKBOT_SHAPES = [
+  ['blob','原始形态','M228.541 114.228C228.541 130.133 225.184 145.994 218.738 160.534C212.674 174.217 203.904 186.669 193.065 196.988C155.933 232.34 99.497 238.596 55.5255 212.24C45.097 205.99 35.6851 198.072 27.7451 188.866C19.1926 178.953 12.3686 167.569 7.65781 155.351C2.60712 142.264 0 128.257 0 114.228C0 98.3219 3.35751 82.4611 9.80315 67.9215C15.8672 54.2382 24.6377 41.7862 35.4767 31.4668C72.6081 -3.88483 129.044 -10.1413 173.016 16.2153C183.444 22.4653 192.856 30.3829 200.796 39.5896C209.349 49.5018 216.173 60.8859 220.883 73.1037C225.934 86.1906 228.541 100.198 228.541 114.228Z'],
+  ['pebble','鹅卵石','M114 8C177 8 217 45 217 109C217 178 181 219 112 219C43 219 12 181 12 113C12 48 51 8 114 8Z'],
+  ['squircle','圆角方','M55 10H174Q219 10 219 55V174Q219 219 174 219H55Q10 219 10 174V55Q10 10 55 10Z'],
+  ['capsule','胶囊','M61 31H168C202 31 220 65 220 114C220 163 202 197 168 197H61C27 197 9 163 9 114C9 65 27 31 61 31Z'],
+  ['triangle','三角体','M114 9Q122 9 128 21L220 194Q227 210 207 210H21Q1 210 9 194L101 21Q106 9 114 9Z'],
+  ['hex','六边体','M114 5L207 58Q218 64 218 78V153Q218 167 207 173L128 218Q114 226 100 218L21 173Q10 167 10 153V78Q10 64 21 58L100 12Q114 5 114 5Z'],
+  ['cloud','云朵','M55 188C21 188 6 169 12 142C-1 113 20 86 51 84C61 48 96 35 124 55C151 28 195 46 195 82C226 91 235 128 213 149C214 174 193 190 165 188Z'],
+  ['drop','水滴','M114 5C137 42 202 103 202 151C202 196 165 222 114 222C63 222 26 196 26 151C26 103 91 42 114 5Z'],
+];
+let selectedShape = GROKBOT_SHAPES[0];
+const bodyPath = document.querySelector('#shape-body-path'), clipPathEl = document.querySelector('#shape-clip-path');
+function applyShape(id){
+  const item = GROKBOT_SHAPES.find(s => s[0] === id);
+  if (!item) return;
+  selectedShape = item;
+  bodyPath.setAttribute('d', item[2]);
+  clipPathEl.setAttribute('d', item[2]);
+}
 
 /* ===== 尺寸控制（每次缩小 1/3） + 配饰开关 ===== */
 let petScale = 1;
@@ -476,6 +496,8 @@ function frame(now) {
   const yaw = yawSpring.step(yawSpring.target, dt);
   const pitch = pitchSpring.step(pitchSpring.target, dt);
   bot3d.style.transform = `rotateY(${yaw.toFixed(2)}deg) rotateX(${pitch.toFixed(2)}deg)`;
+  // 动态柔阴影随转向偏移
+  bot.style.filter = `drop-shadow(${(yaw*0.18).toFixed(1)}px ${(16+Math.abs(yaw)*0.06).toFixed(1)}px 14px rgba(0,0,0,.4))`;
 
   requestAnimationFrame(frame);
 }
@@ -500,13 +522,14 @@ function stateMotion(name) {
 }
 
 /* ===== 快捷果冻动作 ===== */
-const quickClasses = ['quick-bounce','quick-shake','quick-peek','quick-pinch','quick-squish','quick-wave'];
+const quickClasses = ['quick-bounce','quick-shake','quick-peek','quick-pinch','quick-squish','quick-wave','quick-run','quick-celebrate'];
 function playQuickAction(name) {
   [...quickClasses, 'act-bounce','act-tilt','act-scan','act-turn','act-pulse','act-glitch'].forEach(cls => bot.classList.remove(cls));
   viewer.classList.remove('guides');
   void bot.offsetWidth;
   bot.classList.add(`quick-${name}`);
-  setTimeout(() => bot.classList.remove(`quick-${name}`), name === 'wave' ? 1350 : name === 'pinch' ? 1200 : 950);
+  const dur = name === 'wave' ? 1350 : name === 'pinch' ? 1200 : name === 'run' ? 1200 : name === 'celebrate' ? 1000 : 950;
+  setTimeout(() => bot.classList.remove(`quick-${name}`), dur);
 }
 
 /* ===== 状态特效（轨道激光环 / 雷达外传波纹 / 加载弧 / 警报脉冲 / 扫描光束 + 粒子） ===== */
@@ -566,9 +589,12 @@ function showMood(text) {
 }
 const showLine = state => showMood(randLine(state));
 
-// 偏向工作流：约四成从"产品流程"组里挑，让码字/发送/接收等状态更常出现
+// 偏向工作流 + 趣味状态常出现（爱心/星星/彩带才看得见）
+const FUN_STATES = ['happy','excited','celebrate','playful','laughing','bouncing','proud'];
 function pickState() {
-  if (Math.random() < 0.4) return pick(DATA.GROUPS['Cycle produit']);
+  const r = Math.random();
+  if (r < 0.25) return pick(FUN_STATES);                 // 趣味状态（爱心/星星/彩带常见）
+  if (r < 0.65) return pick(DATA.GROUPS['Cycle produit']); // 工作流
   return pick(ALL_STATES);
 }
 function petSetState(name) {
@@ -578,6 +604,12 @@ function petSetState(name) {
   stateMotion(name);
   setEffect(name);
   showLine(name);
+  // 庆祝：双脚连跳 + 金色彩带 + 太棒啦✨
+  if (name === 'celebrate') {
+    playQuickAction('celebrate');
+    for (let i = 0; i < 6; i++) setTimeout(() => spawnFxParticle('excited'), i * 90);
+    setTimeout(() => showMood('太棒啦✨'), 220);
+  }
 }
 function cycleExpr() {
   clearTimeout(exprTimer);
@@ -594,7 +626,7 @@ function changeState() {
   if (autoPaused) { stateTimer = setTimeout(changeState, 3000); return; }
   let s; do { s = pickState(); } while (s === activeState && ALL_STATES.length > 1);
   petSetState(s);
-  if (Math.random() < 0.28) playQuickAction(pick(['bounce','peek','wave','squish','shake']));
+  if (Math.random() < 0.34) playQuickAction(pick(['bounce','peek','wave','squish','shake','run']));
   if (Math.random() < 0.14) applyColor(pick(GROKBOT_COLORS));
   stateTimer = setTimeout(changeState, rand(7000, 13000));
 }
@@ -655,10 +687,11 @@ function endDrag() {
   yawSpring.target = 0; pitchSpring.target = 0;
   if (window.electronAPI && window.electronAPI.dragEnd) window.electronAPI.dragEnd();
   if (moveDist < 6) {
-    // 视为点击 → 反应 + 眨眼
-    const type = STATE_REACTION[activeState] || 'bounce';
-    reaction = { type, t: 0, dur: 620 };
+    // 摸头撒娇：爱心上浮 + 傲娇台词 + 轻柔挤压
+    reaction = { type: 'squash', t: 0, dur: 620 };
     eyePulse = 1; blink();
+    for (let i = 0; i < 3; i++) setTimeout(() => spawnFxParticle('happy'), i * 180);
+    showMood(pick(['嘿嘿~被摸头啦','才、才没开心呢…才怪','小主人手好暖','呜~再摸一下嘛']));
   }
 }
 window.addEventListener('pointerup', endDrag);
@@ -693,10 +726,7 @@ chooseExpression(0);
 activeState = 'idle';
 showMood('Sonnet Bot 上线啦~');
 requestAnimationFrame(frame);
-// 尺寸按钮
-document.querySelector('#sz-minus').addEventListener('click', () => applyScale(petScale * 2/3));
-document.querySelector('#sz-plus').addEventListener('click', () => applyScale(petScale * 3/2));
-document.querySelector('#sz-reset').addEventListener('click', () => applyScale(1));
+// 尺寸按钮已移到右键菜单，悬停按钮取消
 // 启动自动轮询 + 自言自语
 cycleExpr();
 changeState();
@@ -719,6 +749,7 @@ window.moodiePet = {
 if (window.electronAPI && window.electronAPI.onMenuAction) {
   window.electronAPI.onMenuAction((action) => {
     if (action.indexOf('color:') === 0) { applyColorByHex(action.slice(6)); showMood('换色~'); }
+    else if (action.indexOf('shape:') === 0) { applyShape(action.slice(6)); showMood('变' + (selectedShape[1]) + '～'); }
     else if (action.indexOf('accessory:') === 0) { toggleAccessory(action.slice(10)); }
     else if (action.indexOf('size:') === 0) {
       const v = action.slice(5);

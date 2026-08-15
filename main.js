@@ -91,6 +91,19 @@ ipcMain.on('pet:menu', () => {
   const menu = Menu.buildFromTemplate([
     { label: '😊 换个心情', click: () => send('nextMood') },
     { label: '🎲 随机换装', click: () => send('randomLook') },
+    {
+      label: '🔲 选形状',
+      submenu: [
+        { label: '原始形态', click: () => send('shape:blob') },
+        { label: '鹅卵石', click: () => send('shape:pebble') },
+        { label: '圆角方', click: () => send('shape:squircle') },
+        { label: '胶囊', click: () => send('shape:capsule') },
+        { label: '三角体', click: () => send('shape:triangle') },
+        { label: '六边体', click: () => send('shape:hex') },
+        { label: '云朵', click: () => send('shape:cloud') },
+        { label: '水滴', click: () => send('shape:drop') },
+      ],
+    },
     { type: 'separator' },
     {
       label: '尺寸',
