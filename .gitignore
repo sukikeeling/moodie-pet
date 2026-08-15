@@ -6,3 +6,6 @@ renderer.log
 dist/
 .eb-cache/
 .eb-7zip/
+build.sh
+package-manual.sh
+prep-cache.sh
