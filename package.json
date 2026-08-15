@@ -1,7 +1,7 @@
 {
-  "name": "moodie-pet",
-  "version": "1.0.1",
-  "description": "Moodie 桌宠 —— 自动轮询表情的圆嘟嘟小脸桌面宠物 (Electron)",
+  "name": "sonnet-bot",
+  "version": "1.1.0",
+  "description": "Sonnet Bot —— 自动轮询表情的圆嘟嘟小脸桌面宠物 (Electron)",
   "author": "sukikeeling",
   "license": "MIT",
   "repository": {
@@ -12,13 +12,14 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win portable",
-    "pack": "electron-builder --dir --win portable"
+    "pack": "electron-builder --dir --win portable",
+    "icon": "node gen-icon.js"
   },
   "keywords": [
     "electron",
     "desktop-pet",
     "shimeji",
-    "grokbot",
+    "sonnet-bot",
     "moodie",
     "expression",
     "windows"
@@ -28,10 +29,11 @@
     "electron-builder": "^26.15.3"
   },
   "build": {
-    "appId": "com.sukikeeling.moodie-pet",
-    "productName": "Moodie Pet",
+    "appId": "com.sukikeeling.sonnet-bot",
+    "productName": "Sonnet Bot",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "build"
     },
     "electronDownload": {
       "isVerifyChecksum": false
@@ -44,6 +46,7 @@
       "package.json"
     ],
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         "portable"
       ]

@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 /* ============================================================
-   Moodie 桌宠 · 主进程
+   Moodie 桌宠 · 主进程  →  Sonnet Bot · 主进程
    成熟结构参考：live2d-widget / electron 桌宠通用实践
    - 单实例锁，避免重复启动
    - 所有日志写 userData（打包后 __dirname 在只读 app.asar，写它会 EROFS 崩）
@@ -18,7 +18,7 @@ try { fs.writeFileSync(LOG, ''); } catch (_) {}
 process.on('uncaughtException', err => {
   const s = (err && err.stack) || String(err);
   log('UNCAUGHT: ' + s);
-  try { dialog.showErrorBox('Moodie 桌宠出错了', '请把下面的信息反馈给开发者：\n\n' + s); } catch (_) {}
+  try { dialog.showErrorBox('Sonnet Bot 出错了', '请把下面的信息反馈给开发者：\n\n' + s); } catch (_) {}
 });
 process.on('unhandledRejection', err => log('UNHANDLED-REJECTION: ' + ((err && err.stack) || String(err))));
 
@@ -45,6 +45,7 @@ function createWindow() {
     hasShadow: false,
     backgroundColor: '#00000000',
     show: false,
+    icon: (() => { const p = path.join(__dirname, 'build', 'icon.ico'); try { return fs.existsSync(p) ? p : undefined; } catch (_) { return undefined; } })(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -112,6 +113,15 @@ ipcMain.on('pet:menu', () => {
     },
     { type: 'separator' },
     { label: '⏸️ 暂停 / 继续轮询', click: () => send('togglePause') },
+    {
+      label: '🚀 开机自启',
+      type: 'checkbox',
+      checked: app.getLoginItemSettings().openAtLogin,
+      click: (item) => {
+        app.setLoginItemSettings({ openAtLogin: item.checked });
+        send(item.checked ? 'autostart:on' : 'autostart:off');
+      },
+    },
     { type: 'separator' },
     {
       label: '颜色',
