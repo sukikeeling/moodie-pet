@@ -516,7 +516,29 @@ function frame(now) {
   // 动态柔阴影随转向偏移
   bot.style.filter = `drop-shadow(${(yaw*0.18).toFixed(1)}px ${(16+Math.abs(yaw)*0.06).toFixed(1)}px 14px rgba(0,0,0,.4))`;
 
-  requestAnimationFrame(frame);
+  rafId = requestAnimationFrame(frame);
+}
+/* ===== 系统空闲暂停：停掉 rAF + 所有定时器, 让 Windows 正常熄屏/锁屏 ===== */
+let rafId = null;
+let fullyPaused = false;
+function pausePet() {
+  if (fullyPaused) return;
+  fullyPaused = true;
+  autoPaused = true;
+  cancelAnimationFrame(rafId); rafId = null;
+  clearTimeout(stateTimer); clearTimeout(exprTimer); clearTimeout(blinkTimer); clearTimeout(chatterTimer); clearTimeout(tagTimer);
+  clearInterval(fxSpawnTimer); clearInterval(fxFwTimer);
+  fxLayer.className = '';                       // 关掉特效层（停止合成器活动）
+  showMood('zzZ…去歇会儿');
+}
+function resumePet() {
+  if (!fullyPaused) return;
+  fullyPaused = false;
+  autoPaused = false;
+  last = performance.now();
+  if (!rafId) rafId = requestAnimationFrame(frame);
+  cycleExpr(); changeState(); scheduleBlinkPet(); scheduleChatter();
+  showMood('我醒啦~');
 }
 
 /* ===== 状态动作（一次性 CSS 动画） ===== */
@@ -784,7 +806,7 @@ applyScale(1);
 chooseExpression(0);
 activeState = 'idle';
 showMood('Sonnet Bot 上线啦~');
-requestAnimationFrame(frame);
+rafId = requestAnimationFrame(frame);
 // 尺寸按钮已移到右键菜单，悬停按钮取消
 // 启动自动轮询 + 自言自语
 cycleExpr();
@@ -802,6 +824,8 @@ window.moodiePet = {
   nextMood: () => { const s = pick(ALL_STATES.filter(x => x !== activeState)) || pick(ALL_STATES); petSetState(s); },
   randomLook: () => { applyColor(pick(GROKBOT_COLORS)); chooseExpression(Math.floor(Math.random() * DATA.EXPRESSIONS.length)); playQuickAction(pick(['bounce','peek','wave','squish','shake'])); },
   togglePause,
+  idlePause: pausePet,
+  idleResume: resumePet,
   quit: () => { if (window.electronAPI && window.electronAPI.quit) window.electronAPI.quit(); },
 };
 // Electron 右键菜单回调

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Menu, screen, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, screen, dialog, powerMonitor } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -155,7 +155,31 @@ ipcMain.on('pet:menu', () => {
 
 ipcMain.on('pet:quit', () => app.quit());
 
-app.whenReady().then(createWindow);
+/* ===== 系统空闲暂停：光标 5 分钟没动 → 暂停桌宠，让 Windows 正常熄屏/锁屏 ===== */
+const IDLE_MS = 5 * 60 * 1000;   // 光标静止 5 分钟判定空闲
+let idleTimer = null, idleLastCursor = null, staticSince = Date.now(), petPaused = false;
+const sendIdle = (a) => { if (win && !win.isDestroyed()) win.webContents.send('pet:menu-action', a); };
+function startIdleWatch() {
+  idleLastCursor = screen.getCursorScreenPoint();
+  staticSince = Date.now();
+  petPaused = false;
+  idleTimer = setInterval(() => {
+    const c = screen.getCursorScreenPoint();
+    if (c.x !== idleLastCursor.x || c.y !== idleLastCursor.y) {
+      idleLastCursor = c; staticSince = Date.now();
+      if (petPaused) { petPaused = false; sendIdle('idleResume'); }   // 光标一动就醒
+    } else if (!petPaused && Date.now() - staticSince > IDLE_MS) {
+      petPaused = true; sendIdle('idlePause');                        // 空够久就暂停
+    }
+  }, 8000);
+}
+// 兜底：锁屏 / 系统休眠 → 暂停；解锁 / 恢复 → 唤醒
+powerMonitor.on('lock-screen', () => { petPaused = true; sendIdle('idlePause'); });
+powerMonitor.on('unlock-screen', () => { petPaused = false; staticSince = Date.now(); sendIdle('idleResume'); });
+powerMonitor.on('suspend', () => { petPaused = true; sendIdle('idlePause'); });
+powerMonitor.on('resume', () => { petPaused = false; staticSince = Date.now(); sendIdle('idleResume'); });
+
+app.whenReady().then(() => { createWindow(); startIdleWatch(); });
 app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.show(); } });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });

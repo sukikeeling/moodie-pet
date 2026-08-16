@@ -1,6 +1,6 @@
 {
   "name": "sonnet-bot",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Sonnet Bot —— 自动轮询表情的圆嘟嘟小脸桌面宠物 (Electron)",
   "author": "sukikeeling",
   "license": "MIT",
