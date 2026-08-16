@@ -78,7 +78,7 @@
   .body-part, .accessory { display: none; }
   .body-part { fill: none; stroke: var(--bot-color); stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; }
   .body-part circle, .body-part ellipse { fill: var(--bot-color); stroke: none; }
-  .body-part.enabled, .accessory.enabled, .quick-wave #part-hands, .quick-run #part-feet { display: block; }
+  .body-part.enabled, .accessory.enabled, .quick-wave #part-hands { display: block; }
   .back-accessory { fill: #7657d8; opacity: .88; }
   .front-accessory { stroke: #171813; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
   .front-accessory circle { fill: rgba(255,255,255,.12); }
@@ -116,8 +116,6 @@
   @keyframes pinch-eyes { 0%,100%{transform:scaleX(1)} 24%{transform:scaleX(.56)} 44%{transform:scaleX(1.16)} 61%{transform:scaleX(.9)} }
   @keyframes quick-squish { 0%,100%{transform:scale(1)} 30%{transform:scale(1.15,.72) translateY(20px)} 60%{transform:scale(.86,1.18) translateY(-14px)} }
   @keyframes quick-wave { 0%,100%{transform:rotate(0)} 50%{transform:rotate(-70deg)} }
-  .bot.quick-run { animation: quick-run .32s ease-in-out infinite; }
-  @keyframes quick-run { 0%,100%{transform:translateY(0) scale(1,.98)} 25%{transform:translateY(-6px) scale(.98,1.04)} 50%{transform:translateY(0) scale(1.02,.96)} 75%{transform:translateY(-4px) scale(.99,1.03)} }
   .bot.quick-celebrate { animation: quick-celebrate 1s ease; }
   @keyframes quick-celebrate { 0%,100%{transform:translateY(0) scale(1,1)} 30%{transform:translateY(-26px) scale(.94,1.08)} 55%{transform:translateY(2px) scale(1.06,.92)} 80%{transform:translateY(-12px) scale(.97,1.04)} }
 
@@ -168,6 +166,18 @@
   .fx-spark { color:#ffd84d; font-size:14px; text-shadow:0 0 8px rgba(255,216,77,.8); animation:fx-twinkle 1.2s ease-out forwards; }
   .fx-dot { width:9px; height:9px; border-radius:50%; background:#4a3a5e; animation:fx-bob 1.2s ease-in-out forwards; }
   .fx-confetti { width:8px; height:12px; border-radius:2px; animation:fx-burst 1.5s ease-out forwards; }
+  .fx-fw { position:absolute; width:5px; height:5px; border-radius:50%; animation:fw-burst .95s ease-out forwards; }
+  @keyframes fw-burst { 0%{transform:translate(0,0) scale(1.3);opacity:1} 60%{opacity:1} 100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0} }
+  .fx-rocket { position:absolute; width:4px; height:4px; border-radius:50%; animation:fw-rise .55s ease-out forwards; }
+  @keyframes fw-rise { 0%{transform:translateY(0);opacity:1} 75%{opacity:1} 100%{transform:translateY(var(--rise,-160px));opacity:0} }
+  .fx-tear { position:absolute; color:#5ec5ff; font-size:14px; text-shadow:0 0 5px rgba(94,197,255,.6); animation:fx-fall 1.6s ease-in forwards; }
+  @keyframes fx-fall { 0%{transform:translateY(-10px);opacity:0} 15%{opacity:1} 100%{transform:translateY(60px);opacity:0} }
+  .fx-exclaim { position:absolute; color:#ff5d9e; font-size:22px; font-weight:900; text-shadow:0 0 8px rgba(255,93,158,.8); animation:fx-pop .8s ease-out forwards; }
+  @keyframes fx-pop { 0%{transform:scale(0) translateY(8px);opacity:0} 40%{transform:scale(1.3) translateY(-4px);opacity:1} 100%{transform:scale(.8) translateY(-20px);opacity:0} }
+  .fx-steam { position:absolute; width:12px; height:12px; border-radius:50%; background:rgba(180,180,190,.5); animation:fx-steam 1.4s ease-out forwards; }
+  @keyframes fx-steam { 0%{transform:translateY(0) scale(.4);opacity:0} 25%{opacity:.8} 100%{transform:translateY(-50px) scale(1.4);opacity:0} }
+  .fx-haha { position:absolute; color:#ff9800; font-size:16px; font-weight:900; text-shadow:0 0 6px rgba(255,152,0,.7); animation:fx-haha 1.2s ease-out forwards; }
+  @keyframes fx-haha { 0%{transform:scale(.4) translateY(0);opacity:0} 30%{opacity:1} 100%{transform:scale(1.1) translateY(-40px) rotate(8deg);opacity:0} }
   @keyframes fx-float { 0%{transform:translate(0,0) scale(.5);opacity:0} 15%{opacity:1} 100%{transform:translate(var(--dx,0),-130px) scale(1.15);opacity:0} }
   @keyframes fx-bob { 0%{transform:translateY(0);opacity:0} 30%{opacity:1} 100%{transform:translateY(-34px);opacity:0} }
   @keyframes fx-burst { 0%{transform:translate(0,0) rotate(0);opacity:1} 100%{transform:translate(var(--dx,0),var(--dy,80px)) rotate(var(--rot,360deg));opacity:0} }
@@ -221,49 +231,56 @@ let expression = 0, current = DATA.EXPRESSIONS[0].map(r => r.map(p => [...p])), 
     morph = 1, velocity = 0, last = performance.now(), blinkStart = 0,
     gazeX = 0, gazeY = 0, turn = 0, activeState = 'idle';
 
-// 可爱俏皮傲娇台词 · 办公/代码/陪伴定位 · 常有小主人互动
+// 台词：回归第一版（跟着表情走的走心词）+ 轻颜文字润色 · 害羞归害羞、傲娇归傲娇 · 庆祝带烟花
 const STATE_LINES = {
-  sleeping:['小主人…我先眯一会儿…','呼噜…梦到在摸鱼…','别吵我啦，困死啦～'],
-  waking:['唔…小主人来啦？','眼睛睁不开…再睡五分钟嘛','啊——早安！才不是在等你呢'],
-  idle:['小主人，戳我一下嘛～','发呆中…想小主人了','今天也要一起加油呀','哼，没人理我…'],
-  listening:['我在听我在听！','小主人说，我记','嗯嗯，然后呢然后呢？'],
-  thinking:['让我想想…','唔…有思路了！','这个嘛…小主人等我一下','脑细胞疯狂运转中'],
-  searching:['翻箱倒柜找资料～','搜搜看！','诶？找到点线索了','小主人要的东西在不在…'],
-  working:['埋头苦干中…别催！','快好了快好了～','专注模式 ON！','小主人先忙，我也在努力呀'],
-  excited:['好耶！好耶！','冲冲冲～','太棒了吧！','嘿嘿开心得要转圈圈'],
-  surprised:['咦？！','哇哦——','小主人你居然…！','吓我一跳！'],
-  suspicious:['emmm…有点东西','蹊跷，很蹊跷','哼，我才不信呢','小主人你是不是瞒着我'],
-  angry:['哼！气鼓鼓！','不理你了！','才不是生气，是娇','别惹我，会咬人的哦'],
-  drowsy:['哈欠～眼皮打架了','撑不住了…小主人我趴会儿','好困好困…再五分钟嘛'],
-  happy:['嘿嘿～心情美美哒','和小主人一起真开心','开心得冒泡泡～'],
-  curious:['这是什么呀？','让我瞅瞅～','小主人这是啥？有意思','凑近看看…'],
-  confused:['啊这…？','等等，啥情况','脑壳转不过来了…','小主人我懵了'],
-  bored:['好无聊啊～','时间怎么这么慢','小主人理理我嘛…','无聊到长蘑菇了'],
-  proud:['哼哼，拿下了！','不错吧？夸我夸我','稳了～小主人给我发小红花不'],
-  shy:['哎呀…别盯着我看啦','害羞了啦…','小主人太直接了呜','脸红…才没有'],
-  sad:['呜…心情有点低','小主人…抱抱我好不好','有点丧…不是你的错啦'],
-  laughing:['哈哈哈！','笑死我了嘿嘿','小主人你逗死我了','嘿嘿嘿～'],
-  scared:['吓！','别吓我呀～','瑟瑟发抖…小主人保护我','哇啊！'],
-  playful:['来玩呀～','皮一下很开心','捉迷藏？小主人你找我','嘿嘿来追我呀'],
-  celebrate:['耶！搞定！','太棒啦✨庆祝！','圆满完工！小主人快夸我','放烟花～呼呼'],
-  orbit:['巡视一圈～','轨道运行中','绕绕绕…我替小主人看场子','滴滴，巡航中'],
-  radar:['雷达扫描…','滴滴滴～探测中','发现小主人！','搜索信号中…'],
-  progress:['进度 +1～','一点点推进，稳！','稳扎稳打','又近了一步嘿'],
-  spawning:['我来啦！','上线！','小主人我好醒啦','诞生～'],
-  humming:['哼哼～','啦啦啦～','小曲儿走起～','哼的小主人听不听嘛'],
-  loading:['加载中…','转圈圈～','缓冲一下嘛小主人','读条中…耐心点啦'],
-  dictating:['你说我记～','听写中','嗯嗯，记下了','小主人说慢点啦'],
-  writing:['码字中…','写点东西','这段这么写…','文档 ing～小主人别催'],
-  sending:['发出去了！','发送中…','消息走你～','叮——寄出去了'],
-  receiving:['收到新消息！','来活咯','有新东西～','小主人有你的快递'],
-  uploading:['上传中…','传上去啦～','推送到云端','嗖——飞上去了'],
-  notifying:['叮！提醒一下','有个通知～','小主人注意查收','叮咚～'],
-  alerting:['警报！警报！','注意注意！','红色预警！小主人快看','滴滴滴！出事啦'],
-  dragging:['哎哎别拽我！','我在移动啦','别拉我呀小主人','呜…被提溜走了'],
-  bouncing:['蹦蹦蹦！','弹一下～','嗨起来！','蹦得老高了嘿嘿'],
-  'powering-down':['收工啦～','关机咯','下次见小主人！','晚安，明天见嘛'],
+  sleeping:['困了…先眯会儿','呼噜呼噜','别叫我了…'],
+  waking:['嗯？醒了','刚醒，缓缓','谁在叫我'],
+  idle:['发呆中…','戳我有惊喜','今天做点啥呢','没事做呀'],
+  listening:['我在听','你说我记','嗯嗯，继续'],
+  thinking:['让我想想…','嗯…有思路了','这个有点意思','容我三思(⊙﹏⊙)'],
+  searching:['翻资料中…','搜搜看','找到一点线索了','正在翻箱倒柜'],
+  working:['埋头干活中…','在忙，别催','快好了快好了','专注模式 ON','快下班啦？'],
+  excited:['好耶！','冲冲冲！','太棒了吧(≧▽≦)','嘿咻！'],
+  surprised:['咦？！','哇哦','没想到！'],
+  suspicious:['emmm…','有点蹊跷','我才不信呢(¬_¬ )'],
+  angry:['哼！','气鼓鼓','别惹我'],
+  drowsy:['哈欠～','眼皮打架了','头晕晕(⊙﹏⊙)','撑不住了…'],
+  happy:['嘿嘿','今天状态不错','心情美美哒(◡‿◡)'],
+  curious:['这是什么？','让我瞅瞅','有意思～'],
+  confused:['啊这…','等等，啥情况','脑子转不过来(⊙﹏⊙)'],
+  bored:['好无聊啊','没事做…','休息一会儿(⊙﹏⊙)','时间好慢'],
+  proud:['哼哼，拿下了','不错吧？','稳了'],
+  shy:['哎呀…','别盯着我看啦','害羞了'],
+  sad:['呜…','心情低落','有点丧(´；ω；`)'],
+  laughing:['哈哈哈','笑得停不下来～','嘿嘿嘿(≧▽≦)'],
+  scared:['吓！','别吓我呀','瑟瑟发抖'],
+  playful:['来玩呀','皮一下','捉迷藏？'],
+  celebrate:['耶！搞定！','庆祝一下','圆满完工','快看，烟花！'],
+  orbit:['巡视一圈','轨道运行中','绕一绕'],
+  radar:['雷达扫描…','滴滴滴','探测中'],
+  progress:['进度 +1','一点点推进','稳扎稳打'],
+  spawning:['诞生！','我来啦','上线'],
+  humming:['哼哼～','啦啦啦','小曲儿走起'],
+  loading:['加载中…','转圈圈','缓冲一下'],
+  dictating:['你说我记','听写中','嗯，记下了'],
+  writing:['码字中…','写点东西','这段这么写…','文档 ing'],
+  sending:['发出去了！','发送中…','消息走你'],
+  receiving:['收到新消息','来活了','有新东西'],
+  uploading:['上传中…','传上去啦','推送到云端'],
+  notifying:['叮！提醒一下','有个通知','注意查收'],
+  alerting:['警报！','注意注意','红色预警'],
+  dragging:['哎哎别拽','我在移动','别拉我啦'],
+  bouncing:['蹦蹦蹦','弹一下','嗨起来'],
+  'powering-down':['收工啦','关机咯','下次见'],
 };
-const randLine = state => { const a = STATE_LINES[state] || [stateNames[state] || state]; return a[Math.floor(Math.random() * a.length)]; };
+let _lastLine = '';
+const randLine = state => {
+  const a = STATE_LINES[state] || [stateNames[state] || state];
+  let l = a[Math.floor(Math.random() * a.length)];
+  for (let i = 0; i < 3 && l === _lastLine && a.length > 1; i++) l = a[Math.floor(Math.random() * a.length)];
+  _lastLine = l;
+  return l;
+};
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const centroid = ring => ring.reduce((a, p) => [a[0] + p[0] / ring.length, a[1] + p[1] / ring.length], [0, 0]);
 const path = ring => 'M' + ring.map(p => `${p[0].toFixed(2)} ${p[1].toFixed(2)}`).join('L') + 'Z';
@@ -522,13 +539,13 @@ function stateMotion(name) {
 }
 
 /* ===== 快捷果冻动作 ===== */
-const quickClasses = ['quick-bounce','quick-shake','quick-peek','quick-pinch','quick-squish','quick-wave','quick-run','quick-celebrate'];
+const quickClasses = ['quick-bounce','quick-shake','quick-peek','quick-pinch','quick-squish','quick-wave','quick-celebrate'];
 function playQuickAction(name) {
   [...quickClasses, 'act-bounce','act-tilt','act-scan','act-turn','act-pulse','act-glitch'].forEach(cls => bot.classList.remove(cls));
   viewer.classList.remove('guides');
   void bot.offsetWidth;
   bot.classList.add(`quick-${name}`);
-  const dur = name === 'wave' ? 1350 : name === 'pinch' ? 1200 : name === 'run' ? 1200 : name === 'celebrate' ? 1000 : 950;
+  const dur = name === 'wave' ? 1350 : name === 'pinch' ? 1200 : name === 'celebrate' ? 1000 : 950;
   setTimeout(() => bot.classList.remove(`quick-${name}`), dur);
 }
 
@@ -546,6 +563,10 @@ function spawnFxParticle(type) {
     case 'sleeping': cls = 'fx-z'; content = 'Z'; s.style.setProperty('--dx', (Math.random() * 30 - 15) + 'px'); break;
     case 'humming': cls = 'fx-note'; content = '♪'; s.style.setProperty('--dx', (Math.random() * 40 - 20) + 'px'); break;
     case 'thinking': cls = 'fx-dot'; break;
+    case 'sad': cls = 'fx-tear'; content = '💧'; s.style.left = (90 + Math.random()*50) + 'px'; break;
+    case 'surprised': case 'scared': cls = 'fx-exclaim'; content = '!'; s.style.left = (105 + Math.random()*20) + 'px'; s.style.top = (40 + Math.random()*20) + 'px'; break;
+    case 'angry': cls = 'fx-steam'; s.style.left = (95 + Math.random()*40) + 'px'; s.style.top = (90 + Math.random()*20) + 'px'; break;
+    case 'laughing': cls = 'fx-haha'; content = '哈'; s.style.left = (95 + Math.random()*40) + 'px'; s.style.top = (55 + Math.random()*25) + 'px'; break;
     case 'celebrate': {
       cls = 'fx-confetti'; const cols = ['#ff2d8b', '#2f86ed', '#08c77a', '#ff9800', '#8656f6'];
       s.style.background = cols[Math.floor(Math.random() * cols.length)];
@@ -561,16 +582,54 @@ function spawnFxParticle(type) {
   setTimeout(() => s.remove(), 1800);
 }
 const FX_RING = { orbit: 'fx-orbit', radar: 'fx-radar', loading: 'fx-loading', alerting: 'fx-alert', searching: 'fx-scan' };
-const FX_PARTICLE = { happy: 360, excited: 220, sleeping: 600, humming: 520, thinking: 700, celebrate: 90 };
+const FX_PARTICLE = { happy: 360, excited: 220, sleeping: 600, humming: 520, thinking: 700, celebrate: 90, sad: 500, surprised: 380, scared: 420, angry: 340, laughing: 300 };
+const FX_FIREWORK = { celebrate: 850 };
+let fxFwTimer = null;
+// 烟花：火箭上升 → 顶点绽放成彩光，搭配'快看，烟花！'场景
+function spawnFirework() {
+  const cx = 75 + Math.random() * 90;
+  const apexY = 38 + Math.random() * 50;
+  const cols = ['#ff5d9e', '#ffd84d', '#79e2d0', '#8656f6', '#2f86ed', '#ff9800'];
+  const col = cols[Math.floor(Math.random() * cols.length)];
+  // 上升的火箭
+  const r = document.createElement('span');
+  r.className = 'fx-rocket';
+  r.style.left = cx + 'px'; r.style.top = '200px';
+  r.style.background = col; r.style.boxShadow = '0 0 8px ' + col;
+  r.style.setProperty('--rise', (apexY - 200) + 'px');
+  fxLayer.appendChild(r);
+  setTimeout(() => r.remove(), 600);
+  // 到顶绽放
+  setTimeout(() => {
+    const n = 16 + Math.floor(Math.random() * 6);
+    for (let i = 0; i < n; i++) {
+      const s = document.createElement('span');
+      s.className = 'fx-fw';
+      const ang = (Math.PI * 2 * i) / n + Math.random() * 0.3;
+      const dist = 55 + Math.random() * 60;
+      s.style.left = cx + 'px'; s.style.top = apexY + 'px';
+      s.style.background = col; s.style.boxShadow = '0 0 6px ' + col;
+      s.style.setProperty('--dx', (Math.cos(ang) * dist).toFixed(1) + 'px');
+      s.style.setProperty('--dy', (Math.sin(ang) * dist).toFixed(1) + 'px');
+      fxLayer.appendChild(s);
+      setTimeout(() => s.remove(), 950);
+    }
+  }, 540);
+}
 function setEffect(state) {
   fxLayer.className = '';
-  clearInterval(fxSpawnTimer); fxSpawnTimer = null;
+  clearInterval(fxSpawnTimer); clearInterval(fxFwTimer);
+  fxSpawnTimer = null; fxFwTimer = null;
   const ring = FX_RING[state];
   if (ring) fxLayer.classList.add(ring);
   if (FX_PARTICLE[state]) {
     const rate = FX_PARTICLE[state];
     for (let i = 0; i < (state === 'celebrate' ? 10 : 2); i++) spawnFxParticle(state);
     fxSpawnTimer = setInterval(() => { if (!autoPaused) spawnFxParticle(state); }, rate);
+  }
+  if (FX_FIREWORK[state]) {
+    spawnFirework();
+    fxFwTimer = setInterval(() => { if (!autoPaused) spawnFirework(); }, FX_FIREWORK[state]);
   }
 }
 
@@ -585,36 +644,34 @@ function showMood(text) {
   moodTag.textContent = text;
   moodTag.classList.add('show');
   clearTimeout(tagTimer);
-  tagTimer = setTimeout(() => moodTag.classList.remove('show'), 3000);
+  tagTimer = setTimeout(() => moodTag.classList.remove('show'), 3800);
 }
 const showLine = state => showMood(randLine(state));
 
-// 偏向工作流 + 趣味状态常出现（爱心/星星/彩带才看得见）
-const FUN_STATES = ['happy','excited','celebrate','playful','laughing','bouncing','proud'];
+// 偏向特效状态 + 工作流：让烟花/雷达/轨道/爱心等特效常出现，又不全是普通表情
+const EFFECT_STATES = ['orbit','radar','loading','alerting','searching','celebrate','happy','excited','sleeping','humming','thinking','sad','surprised','scared','angry','laughing'];
 function pickState() {
   const r = Math.random();
-  if (r < 0.25) return pick(FUN_STATES);                 // 趣味状态（爱心/星星/彩带常见）
-  if (r < 0.65) return pick(DATA.GROUPS['Cycle produit']); // 工作流
+  if (r < 0.30) return pick(EFFECT_STATES);                  // 特效状态常出现（30%）
+  if (r < 0.70) return pick(DATA.GROUPS['Cycle produit']);     // 工作流
   return pick(ALL_STATES);
 }
 function petSetState(name) {
   activeState = name;
   const pool = DATA.POOLS[name];
-  chooseExpression(pool[Math.floor(Math.random() * pool.length)]);
+  if (pool && pool.length) chooseExpression(pool[Math.floor(Math.random() * pool.length)]);
+  else chooseExpression(Math.floor(Math.random() * DATA.EXPRESSIONS.length)); // 容错：未知状态给随机表情
   stateMotion(name);
   setEffect(name);
   showLine(name);
-  // 庆祝：双脚连跳 + 金色彩带 + 太棒啦✨
-  if (name === 'celebrate') {
-    playQuickAction('celebrate');
-    for (let i = 0; i < 6; i++) setTimeout(() => spawnFxParticle('excited'), i * 90);
-    setTimeout(() => showMood('太棒啦✨'), 220);
-  }
+  // 庆祝：双脚连跳（烟花特效由 setEffect 负责）
+  if (name === 'celebrate') playQuickAction('celebrate');
 }
 function cycleExpr() {
   clearTimeout(exprTimer);
   if (autoPaused) { exprTimer = setTimeout(cycleExpr, 2000); return; }
-  const pool = DATA.POOLS[activeState];
+  const pool = DATA.POOLS[activeState] || [];
+  if (!pool.length) { exprTimer = setTimeout(cycleExpr, 3000); return; } // 容错
   let idx = pick(pool);
   if (idx === expression && pool.length > 1) idx = pick(pool);
   chooseExpression(idx);
@@ -624,10 +681,12 @@ function cycleExpr() {
 function changeState() {
   clearTimeout(stateTimer);
   if (autoPaused) { stateTimer = setTimeout(changeState, 3000); return; }
-  let s; do { s = pickState(); } while (s === activeState && ALL_STATES.length > 1);
-  petSetState(s);
-  if (Math.random() < 0.34) playQuickAction(pick(['bounce','peek','wave','squish','shake','run']));
-  if (Math.random() < 0.14) applyColor(pick(GROKBOT_COLORS));
+  try {
+    let s; do { s = pickState(); } while (s === activeState && ALL_STATES.length > 1);
+    petSetState(s);
+    if (Math.random() < 0.28) playQuickAction(pick(['bounce','peek','wave','squish','shake']));
+    if (Math.random() < 0.14) applyColor(pick(GROKBOT_COLORS));
+  } catch (e) { /* 单次异常不卡死轮询 */ }
   stateTimer = setTimeout(changeState, rand(7000, 13000));
 }
 function scheduleBlinkPet() {
@@ -643,7 +702,7 @@ function scheduleChatter() {
   chatterTimer = setTimeout(() => {
     if (!autoPaused && !dragging) showLine(activeState);
     scheduleChatter();
-  }, rand(7000, 14000));
+  }, rand(11000, 22000));
 }
 function togglePause() {
   autoPaused = !autoPaused;
@@ -691,7 +750,7 @@ function endDrag() {
     reaction = { type: 'squash', t: 0, dur: 620 };
     eyePulse = 1; blink();
     for (let i = 0; i < 3; i++) setTimeout(() => spawnFxParticle('happy'), i * 180);
-    showMood(pick(['嘿嘿~被摸头啦','才、才没开心呢…才怪','小主人手好暖','呜~再摸一下嘛']));
+    showMood(pick(['嘿嘿~被摸头啦','舒服～(◡‿◡)','再来一下嘛','哎呀别戳啦']));
   }
 }
 window.addEventListener('pointerup', endDrag);
