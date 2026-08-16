@@ -137,6 +137,13 @@ ipcMain.on('pet:menu', () => {
     },
     { type: 'separator' },
     {
+      label: '🎨 主题',
+      submenu: [
+        { label: '🌈 彩色可爱', click: () => send('theme:colorful') },
+        { label: '⚫ Sonnet 极简（黑球白眼）', click: () => send('theme:grok') },
+      ],
+    },
+    {
       label: '颜色',
       submenu: [
         '可可棕 #9a6737', '活力红 #ff3347', '暖橙 #ff6a00', '琥珀 #ff9800',

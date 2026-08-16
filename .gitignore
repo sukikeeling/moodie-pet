@@ -10,3 +10,7 @@ build/icon-preview.bmp
 build.sh
 package-manual.sh
 prep-cache.sh
+
+backup-v*/
+Sonnet.Bot.*.exe
+dist/*.exe

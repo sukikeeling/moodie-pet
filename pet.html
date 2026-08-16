@@ -4,7 +4,11 @@
 <meta charset="UTF-8">
 <title>Sonnet Bot</title>
 <style>
-  :root { --bot-color: #ff5d9e; }
+  :root {
+    --bot-color: #ff5d9e;
+    --eye-color: #fffdf7;   /* 眼睛底色（Grok 主题为纯白） */
+    --demo-bg: #ffffff;     /* 浏览器演示模式背景 */
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
     width: 100%; height: 100%; overflow: hidden;
@@ -15,6 +19,9 @@
   }
   body { display: grid; place-items: center; cursor: grab; }
   body.dragging { cursor: grabbing; }
+  /* 浏览器（非 Electron）打开时：纯白演示背景，方便直接预览 */
+  body.web-demo { background: var(--demo-bg); }
+  body.web-demo .bot { filter: drop-shadow(0 20px 24px rgba(0,0,0,.22)); }
 
   .stage {
     perspective: 900px;
@@ -32,7 +39,7 @@
     will-change: transform; display: block;
   }
   .body { fill: var(--bot-color); transition: fill .5s ease; }
-  .eye { fill: #fffdf7; }
+  .eye { fill: var(--eye-color); transition: fill .5s ease; }
   .orbit { fill: none; stroke: #e36f3d; stroke-width: 1; stroke-dasharray: 5 6; opacity: 0; }
   .viewer.guides .orbit { opacity: .55; }
 
@@ -54,6 +61,9 @@
     transform: translateX(-50%) scale(var(--inv));
     border: 6px solid transparent; border-top-color: #fff;
   }
+  /* Grok 主题：弹出词黑底白字极简风 */
+  body.grok-theme .mood-tag { background: #0d0d0f; color: #fff; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+  body.grok-theme .mood-tag::after { border-top-color: #0d0d0f; }
 
   /* 尺寸控制（悬停显示，反向缩放保持可点） */
   .size-ctrl {
@@ -125,13 +135,17 @@
   #fx > span, #fx::before, #fx::after { position:absolute; left:50%; top:50%; }
   #fx::before, #fx::after { content:""; }
 
-  /* 轨道：双旋转激光环（椭圆 + 圆，霓虹光晕） */
-  #fx.fx-orbit::before { width:210px; height:84px; margin:-42px 0 0 -105px; border-radius:50%;
-    border:2px solid transparent; border-top-color:#79e2d0; border-right-color:#e36f3d;
-    box-shadow:0 0 12px #79e2d0, 0 0 22px rgba(121,226,208,.5); animation:fx-spin 3s linear infinite; }
-  #fx.fx-orbit::after { width:176px; height:176px; margin:-88px 0 0 -88px; border-radius:50%;
-    border:2px solid transparent; border-top-color:#ff5d9e; border-left-color:#8656f6;
-    box-shadow:0 0 16px #ff5d9e, 0 0 28px rgba(255,93,158,.45); animation:fx-spin 5s linear infinite reverse; }
+  /* 轨道：三色霓虹轨道环（多色细线旋转，不同转速/方向） */
+  #fx.fx-orbit .ring { position:absolute; left:50%; top:50%; border-radius:50%; border:2px solid transparent; pointer-events:none; }
+  #fx.fx-orbit .ring.r1 { width:226px; height:92px; margin:-46px 0 0 -113px;
+    border-top-color:#79e2d0; border-right-color:#e36f3d;
+    box-shadow:0 0 12px #79e2d0, 0 0 22px rgba(121,226,208,.45); animation:fx-spin 3.2s linear infinite; }
+  #fx.fx-orbit .ring.r2 { width:196px; height:196px; margin:-98px 0 0 -98px;
+    border-top-color:#ff5d9e; border-left-color:#8656f6; border-bottom-color:#ffd84d;
+    box-shadow:0 0 16px #ff5d9e, 0 0 28px rgba(255,93,158,.4); animation:fx-spin 5.4s linear infinite reverse; }
+  #fx.fx-orbit .ring.r3 { width:248px; height:104px; margin:-52px 0 0 -124px;
+    border-top-color:#08c77a; border-bottom-color:#2f86ed; opacity:.75;
+    box-shadow:0 0 14px rgba(8,199,122,.5); animation:fx-spin 4.2s linear infinite; }
 
   /* 雷达：外传波纹（涟漪向外扩散并淡出） */
   #fx.fx-radar::before, #fx.fx-radar::after { width:90px; height:90px; margin:-45px 0 0 -45px; border-radius:50%;
@@ -157,6 +171,31 @@
     box-shadow:0 0 18px #79e2d0; animation:fx-sweep 1.6s ease-in-out infinite; border-radius:50%; }
   @keyframes fx-sweep { 0%{transform:translateX(-72px)} 50%{transform:translateX(72px)} 100%{transform:translateX(-72px)} }
   @keyframes fx-spin { to { transform:rotate(360deg); } }
+
+  /* 加载三圆点（loading 类状态，身体下方跳动） */
+  #fx .fx-dots { position:absolute; left:50%; top:63%; display:flex; gap:9px;
+    transform:translate(-50%,-50%); pointer-events:none; }
+  #fx .fx-dots i { width:11px; height:11px; border-radius:50%; background:var(--bot-color);
+    opacity:.5; animation:fx-dot-bounce 1.15s ease-in-out infinite; }
+  #fx .fx-dots i:nth-child(2) { animation-delay:.16s; }
+  #fx .fx-dots i:nth-child(3) { animation-delay:.32s; }
+  @keyframes fx-dot-bounce { 0%,100%{transform:translateY(0);opacity:.35} 40%{transform:translateY(-13px);opacity:1} }
+
+  /* Grok 主题黑球光泽高光（body 上叠加渐变，theme=grok 时显示） */
+  #body-shine { opacity: 0; pointer-events: none; fill: url(#grok-shine); transition: opacity .5s ease; }
+  body.grok-theme #body-shine { opacity: 1; }
+
+  /* Grok 彩虹拖尾：从身体边缘甩出彩虹渐变弧线（红→橙→黄→绿→青→蓝→紫） */
+  .fx-trail { position:absolute; width:104px; height:4px; border-radius:3px;
+    background: linear-gradient(90deg, #ff3347, #ff9800, #ffd84d, #08c77a, #2f86ed, #8656f6);
+    filter: blur(.4px); opacity:0; pointer-events:none; animation: fx-trail .85s ease-out forwards; }
+  @keyframes fx-trail { 0%{ transform: rotate(var(--rot)) translateX(30px) scaleX(.25); opacity:0 }
+    22%{ opacity:.95 } 100%{ transform: rotate(var(--rot)) translateX(var(--dist,130px)) scaleX(1.15); opacity:0 } }
+
+  /* Grok 附加元素：感叹号底部圆点 / 右上角蓝点 / loading 三圆点两侧小黑点 */
+  #exclaim-dot { fill: var(--bot-color); opacity:0; pointer-events:none; transition: opacity .25s ease; }
+  #grok-blue-dot { fill: #2f86ed; opacity:0; pointer-events:none; transition: opacity .25s ease; }
+  #grok-dot-l, #grok-dot-r { fill: var(--bot-color); opacity:0; pointer-events:none; transition: opacity .25s ease; }
 
   /* 粒子（JS 生成 span） */
   .fx-heart, .fx-z, .fx-spark, .fx-note, .fx-dot, .fx-confetti { position:absolute; }
@@ -187,11 +226,21 @@
 <body>
   <div class="stage" id="viewer">
     <div class="mood-tag" id="mood-tag">待机</div>
-    <div id="fx"></div>
+    <div id="fx"><span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span></div>
     <div class="bot3d" id="bot3d">
       <svg class="bot" id="bot" viewBox="-28 -28 285 285" role="img" aria-label="Sonnet Bot">
         <defs>
           <clipPath id="head-clip"><path id="shape-clip-path" d="M228.541 114.228C228.541 130.133 225.184 145.994 218.738 160.534C212.674 174.217 203.904 186.669 193.065 196.988C155.933 232.34 99.497 238.596 55.5255 212.24C45.097 205.99 35.6851 198.072 27.7451 188.866C19.1926 178.953 12.3686 167.569 7.65781 155.351C2.60712 142.264 0 128.257 0 114.228C0 98.3219 3.35751 82.4611 9.80315 67.9215C15.8672 54.2382 24.6377 41.7862 35.4767 31.4668C72.6081 -3.88483 129.044 -10.1413 173.016 16.2153C183.444 22.4653 192.856 30.3829 200.796 39.5896C209.349 49.5018 216.173 60.8859 220.883 73.1037C225.934 86.1906 228.541 100.198 228.541 114.228Z"/></clipPath>
+          <!-- Grok 主题黑球光泽：左上高光 + 底部反光 -->
+          <radialGradient id="grok-shine" cx="34%" cy="28%" r="78%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity=".22"/>
+            <stop offset="38%" stop-color="#ffffff" stop-opacity=".05"/>
+            <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="grok-rim" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="72%" stop-color="#ffffff" stop-opacity="0"/>
+            <stop offset="100%" stop-color="#ffffff" stop-opacity=".16"/>
+          </linearGradient>
         </defs>
         <ellipse class="orbit" cx="114" cy="115" rx="107" ry="38"/>
         <g id="spring-group">
@@ -201,6 +250,12 @@
           <g class="body-part" id="part-hands"><g id="hand-left"><path d="M25 132C5 136-8 148-17 165"/><circle cx="-20" cy="170" r="10"/></g><g id="hand-right"><path d="M204 132C224 136 237 148 246 165"/><circle cx="249" cy="170" r="10"/></g></g>
           <g class="body-part" id="part-feet"><path d="M72 202V224"/><ellipse cx="62" cy="230" rx="24" ry="10"/><path d="M157 202V224"/><ellipse cx="167" cy="230" rx="24" ry="10"/></g>
           <path class="body" id="shape-body-path" d="M228.541 114.228C228.541 130.133 225.184 145.994 218.738 160.534C212.674 174.217 203.904 186.669 193.065 196.988C155.933 232.34 99.497 238.596 55.5255 212.24C45.097 205.99 35.6851 198.072 27.7451 188.866C19.1926 178.953 12.3686 167.569 7.65781 155.351C2.60712 142.264 0 128.257 0 114.228C0 98.3219 3.35751 82.4611 9.80315 67.9215C15.8672 54.2382 24.6377 41.7862 35.4767 31.4668C72.6081 -3.88483 129.044 -10.1413 173.016 16.2153C183.444 22.4653 192.856 30.3829 200.796 39.5896C209.349 49.5018 216.173 60.8859 220.883 73.1037C225.934 86.1906 228.541 100.198 228.541 114.228Z"/>
+          <path id="body-shine" d="M228.541 114.228C228.541 130.133 225.184 145.994 218.738 160.534C212.674 174.217 203.904 186.669 193.065 196.988C155.933 232.34 99.497 238.596 55.5255 212.24C45.097 205.99 35.6851 198.072 27.7451 188.866C19.1926 178.953 12.3686 167.569 7.65781 155.351C2.60712 142.264 0 128.257 0 114.228C0 98.3219 3.35751 82.4611 9.80315 67.9215C15.8672 54.2382 24.6377 41.7862 35.4767 31.4668C72.6081 -3.88483 129.044 -10.1413 173.016 16.2153C183.444 22.4653 192.856 30.3829 200.796 39.5896C209.349 49.5018 216.173 60.8859 220.883 73.1037C225.934 86.1906 228.541 100.198 228.541 114.228Z"/>
+          <!-- Grok 附加形态元素：感叹号底部圆点 / 右上角蓝点 / loading 两侧小黑点（默认隐藏） -->
+          <circle id="exclaim-dot" cx="114" cy="218" r="26"/>
+          <circle id="grok-blue-dot" cx="190" cy="50" r="9"/>
+          <circle id="grok-dot-l" cx="52" cy="114" r="17"/>
+          <circle id="grok-dot-r" cx="176" cy="114" r="17"/>
           <g clip-path="url(#head-clip)" id="eyes"><path class="eye" id="eye-0"/><path class="eye" id="eye-1"/></g>
           <g class="accessory front-accessory" id="accessory-straw-hat"><path d="M63 28Q72-24 114-28Q156-24 165 28Z"/><ellipse cx="114" cy="31" rx="91" ry="18"/><path class="hat-band" d="M64 10Q114 22 164 10L166 27Q114 38 62 27Z"/></g>
           <g class="accessory front-accessory" id="accessory-glasses"><circle cx="72" cy="108" r="37"/><circle cx="157" cy="108" r="37"/><path d="M109 106Q114 99 120 106M35 102L12 94M194 102L217 94"/></g>
@@ -231,47 +286,47 @@ let expression = 0, current = DATA.EXPRESSIONS[0].map(r => r.map(p => [...p])), 
     morph = 1, velocity = 0, last = performance.now(), blinkStart = 0,
     gazeX = 0, gazeY = 0, turn = 0, activeState = 'idle';
 
-// 台词：回归第一版（跟着表情走的走心词）+ 轻颜文字润色 · 害羞归害羞、傲娇归傲娇 · 庆祝带烟花
+// 台词：场景化弹出词 v2（跟着表情走的走心词 + 轻颜文字 · 每个状态贴合真实场景）
 const STATE_LINES = {
-  sleeping:['困了…先眯会儿','呼噜呼噜','别叫我了…'],
-  waking:['嗯？醒了','刚醒，缓缓','谁在叫我'],
-  idle:['发呆中…','戳我有惊喜','今天做点啥呢','没事做呀'],
-  listening:['我在听','你说我记','嗯嗯，继续'],
-  thinking:['让我想想…','嗯…有思路了','这个有点意思','容我三思(⊙﹏⊙)'],
-  searching:['翻资料中…','搜搜看','找到一点线索了','正在翻箱倒柜'],
-  working:['埋头干活中…','在忙，别催','快好了快好了','专注模式 ON','快下班啦？'],
-  excited:['好耶！','冲冲冲！','太棒了吧(≧▽≦)','嘿咻！'],
-  surprised:['咦？！','哇哦','没想到！'],
-  suspicious:['emmm…','有点蹊跷','我才不信呢(¬_¬ )'],
-  angry:['哼！','气鼓鼓','别惹我'],
-  drowsy:['哈欠～','眼皮打架了','头晕晕(⊙﹏⊙)','撑不住了…'],
-  happy:['嘿嘿','今天状态不错','心情美美哒(◡‿◡)'],
-  curious:['这是什么？','让我瞅瞅','有意思～'],
-  confused:['啊这…','等等，啥情况','脑子转不过来(⊙﹏⊙)'],
-  bored:['好无聊啊','没事做…','休息一会儿(⊙﹏⊙)','时间好慢'],
-  proud:['哼哼，拿下了','不错吧？','稳了'],
-  shy:['哎呀…','别盯着我看啦','害羞了'],
-  sad:['呜…','心情低落','有点丧(´；ω；`)'],
-  laughing:['哈哈哈','笑得停不下来～','嘿嘿嘿(≧▽≦)'],
-  scared:['吓！','别吓我呀','瑟瑟发抖'],
-  playful:['来玩呀','皮一下','捉迷藏？'],
-  celebrate:['耶！搞定！','庆祝一下','圆满完工','快看，烟花！'],
-  orbit:['巡视一圈','轨道运行中','绕一绕'],
-  radar:['雷达扫描…','滴滴滴','探测中'],
-  progress:['进度 +1','一点点推进','稳扎稳打'],
-  spawning:['诞生！','我来啦','上线'],
-  humming:['哼哼～','啦啦啦','小曲儿走起'],
-  loading:['加载中…','转圈圈','缓冲一下'],
-  dictating:['你说我记','听写中','嗯，记下了'],
-  writing:['码字中…','写点东西','这段这么写…','文档 ing'],
-  sending:['发出去了！','发送中…','消息走你'],
-  receiving:['收到新消息','来活了','有新东西'],
-  uploading:['上传中…','传上去啦','推送到云端'],
-  notifying:['叮！提醒一下','有个通知','注意查收'],
-  alerting:['警报！','注意注意','红色预警'],
-  dragging:['哎哎别拽','我在移动','别拉我啦'],
-  bouncing:['蹦蹦蹦','弹一下','嗨起来'],
-  'powering-down':['收工啦','关机咯','下次见'],
+  sleeping:['呼噜…呼噜…','梦里在吃好吃的…','zzZ 别吵我','梦到云朵了'],
+  waking:['伸个懒腰～','嗯…几点了？','刚醒，有点懵','谁把我叫醒的'],
+  idle:['戳我一下？','发呆放空中…','今天有什么安排','想摸摸我的头吗'],
+  listening:['嗯嗯，你说','我听着呢','记在小本本上了','然后呢？'],
+  thinking:['嗯…让我捋捋','有思路了！','CPU 转起来了','再想想…'],
+  searching:['翻箱倒柜中…','找到了！线索+1','资料库好大呀','再找找看…'],
+  working:['埋头干活中…','进度条在爬','别打扰我！','快好了快好了','摸鱼被抓了？'],
+  excited:['哇哇哇！','起飞！！','太开心了吧！','冲冲冲！'],
+  surprised:['咦？！','啥情况？！','这也行？','吓了一跳！'],
+  suspicious:['嗯？？有猫腻','不对劲…','让我查查你','(￢_￢) 盯'],
+  angry:['哼！！','气鼓鼓了','别惹我哦','我要生气了！'],
+  drowsy:['哈欠～','眼皮在打架…','好困…撑不住了','让我眯五分钟…'],
+  happy:['嘿嘿～','今天心情满分','阳光正好～','美滋滋(◡‿◡)'],
+  curious:['这是什么？','让我瞅瞅…','好想戳一下','咦？有情况'],
+  confused:['啊？啊？','等等…发生了什么','我是不是漏了什么','脑子打结了(⊙﹏⊙)'],
+  bored:['好无聊呀…','时间过得好慢','谁来陪我玩','扣手指中…'],
+  proud:['哼哼～拿下了','还行吧？','我厉害吧','稳的稳的'],
+  shy:['别盯着我看…','脸红了(⁄ ⁄•⁄ω⁄•⁄ ⁄)','哎呀…','好害羞'],
+  sad:['呜…','心情有点down','让我静静…','蓝瘦香菇'],
+  laughing:['哈哈哈哈！','笑死我了','肚子笑疼了','太好笑了吧'],
+  scared:['哇！吓我一跳！','不要过来…','瑟瑟发抖中','救命！'],
+  playful:['来追我呀～','皮一下很开心','嘿嘿，你抓不到我','躲猫猫？'],
+  celebrate:['耶！！成功啦！','放烟花庆祝！','太棒了吧！','圆满！收工！'],
+  orbit:['绕个圈巡逻～','轨道运行中','转一圈回来','观察四周中'],
+  radar:['雷达扫描中…','滴滴…滴滴…','发现目标！','信号探测中'],
+  progress:['进度 +1','一点一点推进','快了快了','攒进度中'],
+  spawning:['闪亮登场！','我来啦！','新生报到！','今天元气满满！'],
+  humming:['啦啦啦～','哼哼小曲儿','心情好就唱两句','♪(´▽｀)'],
+  loading:['加载中…','缓冲一下下','马上就好','转圈圈中'],
+  dictating:['你说我记','记录中…','嗯，写下来了','听写模式 ON'],
+  writing:['码字中…','文思泉涌！','写点什么呢','灵感来了！'],
+  sending:['消息出发！','发出去了！','走你！','已发送✓'],
+  receiving:['收到新消息！','来活了！','有新东西','打开看看…'],
+  uploading:['打包上传中…','搬运中…','传到云端啦','进度 70%…'],
+  notifying:['叮！提醒你一下','有个新通知','注意查收哦','重要消息！'],
+  alerting:['⚠️ 警报！','注意注意！','红色预警！','有情况！'],
+  dragging:['哎哎别拽我','我在动呢…','轻点轻点','换个位置～'],
+  bouncing:['蹦蹦蹦！','弹起来～','嗨起来！','跳跳跳'],
+  'powering-down':['要关机啦','下次见～','下线咯','晚安！'],
 };
 let _lastLine = '';
 const randLine = state => {
@@ -362,27 +417,285 @@ let eyePulse = 0;
 
 const GROKBOT_COLORS = [['cocoa','可可棕','#9a6737'],['red','活力红','#ff3347'],['orange','暖橙','#ff6a00'],['amber','琥珀','#ff9800'],['green','青绿','#08c77a'],['teal','湖蓝','#08b9a9'],['blue','经典蓝','#2f86ed'],['purple','梦幻紫','#8656f6'],['pink','桃粉','#ff2d8b'],['black','纯黑','#000000']];
 let selectedColor = GROKBOT_COLORS[8]; // 桃粉
-function applyColor(item){ selectedColor=item; document.documentElement.style.setProperty('--bot-color', item[2]); }
+let theme = 'colorful';                 // 'colorful' 彩色可爱 | 'grok' 极简黑球白眼
+function applyColor(item) {
+  selectedColor = item;
+  if (theme !== 'grok') document.documentElement.style.setProperty('--bot-color', item[2]);
+}
+/* ===== Grok 主题状态机：黑球白眼，状态自动循环（按视频规格 + 30s 逐帧分析） =====
+   每个状态：身体形状 + 眼睛表情 + 特效；贝塞尔弹簧过渡，先变形身体再变形眼睛
+   眼睛形态绑定（视频帧分析）：竖胶囊=默认 / 横线=思考·六边形 / 圆点=惊讶 / 椭圆=常态·三角 / 大眼=兴奋 */
+const GROK_SHAPES_DEF = {
+  idle:           { shape: 'blob',      expr: [1, 10],         fx: null,           dur: [2800, 4200] },
+  thinking:       { shape: 'blob',      expr: [4, 13, 22, 15, 9], fx: null,        dur: [2000, 3400] },
+  surprised:      { shape: 'exclaim',   expr: [15, 9],         fx: 'exclaim',      dur: [900, 1400] },
+  morph_hex:      { shape: 'hex',       expr: [4, 13],         fx: null,           dur: [2200, 3200] },
+  morph_egg:      { shape: 'egg',       expr: [0, 12],         fx: null,           dur: [2200, 3200] },
+  morph_drop:     { shape: 'drop',      expr: [0, 12],         fx: null,           dur: [2200, 3200] },
+  morph_triangle: { shape: 'triangle',  expr: [0, 12, 17],     fx: 'trail',        dur: [2200, 3200] },
+  orbit:          { shape: 'blob',      expr: [1, 10],         fx: 'orbit',        dur: [2600, 3600] },
+  particles:      { shape: 'blob',      expr: [2, 11],         fx: 'burst',        dur: [1600, 2400] },
+  loading:        { shape: 'blob',      expr: [1, 10],         fx: 'dots',         dur: [1800, 2800] },
+  tiny:           { shape: 'blob',      expr: null,            fx: 'tiny',         dur: [800, 1100] },
+  excited:        { shape: 'blob',      expr: [2, 11, 20],     fx: 'orbit+burst',  dur: [2400, 3200] },
+};
+const GROK_ORDER = ['idle', 'idle', 'thinking', 'surprised', 'morph_hex', 'morph_egg', 'morph_drop', 'morph_triangle', 'orbit', 'particles', 'loading', 'tiny', 'excited', 'idle'];
 
-// 身体形状（右键可选）
+/* Grok 风格弹出词（极简、酷，匹配原生状态语义） */
+const GROK_LINES = {
+  idle: ['待命中', '在线', '……'],
+  thinking: ['分析中', '处理中…', '思考中'],
+  surprised: ['?!', '异常信号', '检测到变化'],
+  morph_hex: ['形态重排', '六边形模式'],
+  morph_egg: ['蛋形模式', '形态聚合'],
+  morph_drop: ['形态聚合', '水滴模式'],
+  morph_triangle: ['重构完成', '三角形模式'],
+  orbit: ['轨道扫描', '环绕运行'],
+  particles: ['能量释放', '粒子流'],
+  loading: ['加载中…', '同步中'],
+  tiny: ['压缩中', '…'],
+  excited: ['全功率', '超频模式'],
+};
+let grokActive = false, grokIdx = 0, grokTimer = null, grokEyeTimer = null, grokFxTimer = null;
+const tinySpring = new Spring(1, 190, 20, 1);          // tiny/loading 身体缩放（绕中心，果冻回弹）
+const eyeFadeSpring = new Spring(1, 170, 21, 1);      // 感叹号形态时眼睛淡出
+const grokBlueDotEl = document.querySelector('#grok-blue-dot');
+const grokDotLEl = document.querySelector('#grok-dot-l');
+const grokDotREl = document.querySelector('#grok-dot-r');
+const exclaimDotEl = document.querySelector('#exclaim-dot');
+
+// 彩虹拖尾：从身体边缘甩出彩虹渐变弧线（视频特效 B）
+function spawnTrail(n = 3) {
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('span');
+    s.className = 'fx-trail';
+    const rot = Math.random() * 360;
+    s.style.left = '115px'; s.style.top = '115px';
+    s.style.setProperty('--rot', rot.toFixed(0) + 'deg');
+    s.style.setProperty('--dist', (90 + Math.random() * 70).toFixed(0) + 'px');
+    fxLayer.appendChild(s);
+    setTimeout(() => s.remove(), 900);
+  }
+}
+function clearGrokFx() {
+  fxLayer.className = '';
+  clearInterval(grokFxTimer); grokFxTimer = null;
+  grokBlueDotEl.style.opacity = 0;
+  grokDotLEl.style.opacity = 0; grokDotREl.style.opacity = 0;
+  exclaimDotEl.style.opacity = 0;
+  tinySpring.target = 1;
+}
+function applyGrokFx(name) {
+  clearGrokFx();
+  if (!name) return;
+  if (name.includes('orbit')) fxLayer.classList.add('fx-orbit');
+  if (name.includes('trail')) { spawnTrail(4); grokFxTimer = setInterval(() => { if (!autoPaused) spawnTrail(3); }, 620); }
+  if (name.includes('burst')) { spawnBurst(14); grokFxTimer = setInterval(() => { if (!autoPaused) spawnBurst(10); }, 850); }
+  if (name === 'exclaim') { grokBlueDotEl.style.opacity = 1; eyeFadeSpring.target = 0; }
+  if (name === 'dots') { tinySpring.target = 0.5; grokDotLEl.style.opacity = 1; grokDotREl.style.opacity = 1; }
+  if (name === 'tiny') tinySpring.target = 0.14;
+}
+function grokSetState(name) {
+  const def = GROK_SHAPES_DEF[name] || GROK_SHAPES_DEF.idle;
+  startShapeMorph(def.shape);                          // 先变形身体
+  showMood(pick(GROK_LINES[name] || GROK_LINES.idle)); // 弹出词（Grok 风格）
+  clearTimeout(grokEyeTimer);
+  grokEyeTimer = setTimeout(() => {                    // 再变形眼睛（先后节奏）
+    if (def.expr && def.expr.length) chooseExpression(def.expr[Math.floor(Math.random() * def.expr.length)]);
+    eyeFadeSpring.target = 1;
+  }, 150);
+  applyGrokFx(def.fx);
+}
+function grokNext() {
+  if (!grokActive) return;
+  grokIdx = (grokIdx + 1) % GROK_ORDER.length;
+  const name = GROK_ORDER[grokIdx];
+  grokSetState(name);
+  const def = GROK_SHAPES_DEF[name];
+  grokTimer = setTimeout(grokNext, rand(def.dur[0], def.dur[1]));
+}
+function startGrokShow() {
+  if (grokActive) return;
+  grokActive = true;
+  grokIdx = -1;
+  grokNext();
+}
+function stopGrokShow() {
+  if (!grokActive) return;
+  grokActive = false;
+  clearTimeout(grokTimer); clearTimeout(grokEyeTimer);
+  clearGrokFx();
+  eyeFadeSpring.target = 1; tinySpring.target = 1;
+}
+
+function applyTheme(t) {
+  theme = t === 'grok' ? 'grok' : 'colorful';
+  const root = document.documentElement.style;
+  if (theme === 'grok') {
+    root.setProperty('--bot-color', '#0d0d0f');
+    root.setProperty('--eye-color', '#ffffff');
+    document.body.classList.add('grok-theme');
+    // 切到 Grok：停掉彩色 39 状态轮询，启动 Grok 11 状态循环
+    clearTimeout(stateTimer); clearTimeout(exprTimer); clearTimeout(chatterTimer);
+    startGrokShow();
+  } else {
+    root.setProperty('--bot-color', selectedColor[2]);
+    root.setProperty('--eye-color', '#fffdf7');
+    document.body.classList.remove('grok-theme');
+    // 切回彩色：停掉 Grok 循环，恢复 39 状态轮询 + 形状回圆球
+    stopGrokShow();
+    startShapeMorph('blob');
+    cycleExpr(); changeState(); scheduleChatter();
+  }
+}
+// 浏览器（非 Electron）打开：纯白演示背景
+if (!(window.electronAPI && window.electronAPI.isElectron)) document.body.classList.add('web-demo');
+
+/* ===== 身体形状 morph 引擎（弹簧插值，任意形状间丝滑果冻过渡） =====
+   形状定义：[id, 中文名, path(采样源), tension(贝塞尔圆滑度: 0=直线 1=顺滑)]
+   ring 数据：用 SVG getPointAtLength 从 path 均匀采样 240 点 → 从质心按角度 48 等分重采样
+   （角度对齐保证 morph 不旋转漂移；每形状仅采样一次并缓存） */
 const GROKBOT_SHAPES = [
-  ['blob','原始形态','M228.541 114.228C228.541 130.133 225.184 145.994 218.738 160.534C212.674 174.217 203.904 186.669 193.065 196.988C155.933 232.34 99.497 238.596 55.5255 212.24C45.097 205.99 35.6851 198.072 27.7451 188.866C19.1926 178.953 12.3686 167.569 7.65781 155.351C2.60712 142.264 0 128.257 0 114.228C0 98.3219 3.35751 82.4611 9.80315 67.9215C15.8672 54.2382 24.6377 41.7862 35.4767 31.4668C72.6081 -3.88483 129.044 -10.1413 173.016 16.2153C183.444 22.4653 192.856 30.3829 200.796 39.5896C209.349 49.5018 216.173 60.8859 220.883 73.1037C225.934 86.1906 228.541 100.198 228.541 114.228Z'],
-  ['pebble','鹅卵石','M114 8C177 8 217 45 217 109C217 178 181 219 112 219C43 219 12 181 12 113C12 48 51 8 114 8Z'],
-  ['squircle','圆角方','M55 10H174Q219 10 219 55V174Q219 219 174 219H55Q10 219 10 174V55Q10 10 55 10Z'],
-  ['capsule','胶囊','M61 31H168C202 31 220 65 220 114C220 163 202 197 168 197H61C27 197 9 163 9 114C9 65 27 31 61 31Z'],
-  ['triangle','三角体','M114 9Q122 9 128 21L220 194Q227 210 207 210H21Q1 210 9 194L101 21Q106 9 114 9Z'],
-  ['hex','六边体','M114 5L207 58Q218 64 218 78V153Q218 167 207 173L128 218Q114 226 100 218L21 173Q10 167 10 153V78Q10 64 21 58L100 12Q114 5 114 5Z'],
-  ['cloud','云朵','M55 188C21 188 6 169 12 142C-1 113 20 86 51 84C61 48 96 35 124 55C151 28 195 46 195 82C226 91 235 128 213 149C214 174 193 190 165 188Z'],
-  ['drop','水滴','M114 5C137 42 202 103 202 151C202 196 165 222 114 222C63 222 26 196 26 151C26 103 91 42 114 5Z'],
+  ['blob','原始形态','M228.541 114.228C228.541 130.133 225.184 145.994 218.738 160.534C212.674 174.217 203.904 186.669 193.065 196.988C155.933 232.34 99.497 238.596 55.5255 212.24C45.097 205.99 35.6851 198.072 27.7451 188.866C19.1926 178.953 12.3686 167.569 7.65781 155.351C2.60712 142.264 0 128.257 0 114.228C0 98.3219 3.35751 82.4611 9.80315 67.9215C15.8672 54.2382 24.6377 41.7862 35.4767 31.4668C72.6081 -3.88483 129.044 -10.1413 173.016 16.2153C183.444 22.4653 192.856 30.3829 200.796 39.5896C209.349 49.5018 216.173 60.8859 220.883 73.1037C225.934 86.1906 228.541 100.198 228.541 114.228Z', 1],
+  ['pebble','鹅卵石','M114 8C177 8 217 45 217 109C217 178 181 219 112 219C43 219 12 181 12 113C12 48 51 8 114 8Z', 1],
+  ['squircle','圆角方','M55 10H174Q219 10 219 55V174Q219 219 174 219H55Q10 219 10 174V55Q10 10 55 10Z', .3],
+  ['capsule','胶囊','M61 31H168C202 31 220 65 220 114C220 163 202 197 168 197H61C27 197 9 163 9 114C9 65 27 31 61 31Z', .55],
+  ['triangle','三角体','M114 9Q122 9 128 21L220 194Q227 210 207 210H21Q1 210 9 194L101 21Q106 9 114 9Z', .12],
+  ['hex','六边体','M114 5L207 58Q218 64 218 78V153Q218 167 207 173L128 218Q114 226 100 218L21 173Q10 167 10 153V78Q10 64 21 58L100 12Q114 5 114 5Z', .25],
+  ['cloud','云朵','M55 188C21 188 6 169 12 142C-1 113 20 86 51 84C61 48 96 35 124 55C151 28 195 46 195 82C226 91 235 128 213 149C214 174 193 190 165 188Z', 1],
+  ['drop','水滴','M114 5C137 42 202 103 202 151C202 196 165 222 114 222C63 222 26 196 26 151C26 103 91 42 114 5Z', 1],
+  ['egg','蛋形','M114.27 8C150 8 198 22 198 96C198 178 158 225 114.27 225C70 225 30 178 30 96C30 22 78 8 114.27 8Z', 1],
+  ['bean','豆形','M196 90C196 160 170 215 114 215C90 215 70 205 60 188C52 175 52 150 58 128C46 120 40 105 40 90C40 45 70 20 114 20C158 20 196 45 196 90Z', .8],
+  ['teardrop','水滴2','M114.27 6C168 6 200 40 200 92C200 150 160 205 114.27 224C68 205 28 150 28 92C28 40 60 6 114.27 6Z', 1],
+  ['exclaim','感叹号','M86 40Q86 30 96 30L132 30Q142 30 142 40L142 180Q142 190 132 190L96 190Q86 190 86 180Z', .45],
 ];
+const shapeRingCache = new Map();
+function sampleShapeRing(d, n = 48) {
+  const svg = document.querySelector('#bot');
+  const tmp = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  tmp.setAttribute('d', d);
+  svg.appendChild(tmp);
+  const L = tmp.getTotalLength();
+  const M = 360, pts = [];
+  for (let i = 0; i < M; i++) { const p = tmp.getPointAtLength((L * i) / M); pts.push([p.x, p.y]); }
+  svg.removeChild(tmp);
+  const cx = pts.reduce((a, p) => a + p[0], 0) / M;
+  const cy = pts.reduce((a, p) => a + p[1], 0) / M;
+  const ring = [];
+  const binHalf = (Math.PI * 2 / n) * 0.8; // bin 采样范围（略大于半 bin，防空洞）
+  // 最小角差（正确处理跨 ±π 边界：diff ∈ [0, π]）
+  const angDiff = (a1, a2) => Math.abs(((a1 - a2 + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI);
+  for (let i = 0; i < n; i++) {
+    const ang = (2 * Math.PI * i) / n - Math.PI / 2; // 从顶部顺时针
+    // 每个角度 bin 选「方向最接近 + 距离质心最远」的点 = 真实外轮廓点（凸形状天然无尖角）
+    let best = -1, bestDist = -Infinity, bestDiff = Infinity;
+    for (let j = 0; j < M; j++) {
+      const p = pts[j];
+      const diff = angDiff(Math.atan2(p[1] - cy, p[0] - cx), ang);
+      if (diff > binHalf) continue;
+      const d0 = Math.hypot(p[0] - cx, p[1] - cy);
+      if (d0 > bestDist || (d0 === bestDist && diff < bestDiff)) { bestDist = d0; bestDiff = diff; best = j; }
+    }
+    if (best >= 0) {
+      ring.push([+pts[best][0].toFixed(3), +pts[best][1].toFixed(3)]);
+    } else {
+      // 空洞兜底：取角度最近的点
+      let fb = -1, fbDiff = Infinity;
+      for (let j = 0; j < M; j++) {
+        const p = pts[j];
+        const diff = angDiff(Math.atan2(p[1] - cy, p[0] - cx), ang);
+        if (diff < fbDiff) { fbDiff = diff; fb = j; }
+      }
+      const p = fb >= 0 ? pts[fb] : [cx, cy];
+      ring.push([+p[0].toFixed(3), +p[1].toFixed(3)]);
+    }
+  }
+  return ring;
+}
+function shapeRing(id) {
+  if (shapeRingCache.has(id)) return shapeRingCache.get(id);
+  const item = GROKBOT_SHAPES.find(s => s[0] === id);
+  if (!item) return null;
+  const ring = sampleShapeRing(item[2]);
+  shapeRingCache.set(id, ring);
+  return ring;
+}
 let selectedShape = GROKBOT_SHAPES[0];
 const bodyPath = document.querySelector('#shape-body-path'), clipPathEl = document.querySelector('#shape-clip-path');
-function applyShape(id){
+const bodyShine = document.querySelector('#body-shine');
+
+/* ---- 大佬 svg-film skill 的贝塞尔弹簧：cubic-bezier(0.34, 1.18, 0.30, 1) ----
+   y=1.18 超调 → 果冻回弹；牛顿法求解，逐点插值 morph（视频同款质感） */
+function bezierEase(x1, y1, x2, y2) {
+  const cx = 3 * x1, cy = 3 * y1;
+  const bx = 3 * (x2 - x1) - cx, by = 3 * (y2 - y1) - cy;
+  const ax = 1 - cx - bx, ay = 1 - cy - by;
+  return function (p) {
+    if (p <= 0) return 0; if (p >= 1) return 1;
+    let t = p;
+    for (let i = 0; i < 6; i++) {
+      const e = ((ax * t + bx) * t + cx) * t - p;
+      const d = (3 * ax * t + 2 * bx) * t + cx;
+      if (Math.abs(e) < 1e-5 || Math.abs(d) < 1e-6) break;
+      t -= e / d;
+    }
+    return ((ay * t + by) * t + cy) * t;
+  };
+}
+const SPRING_EASE = bezierEase(0.34, 1.18, 0.30, 1);
+const SHAPE_MORPH_MS = 480; // 形状 morph 时长（skill 默认 duration）
+let shapeFrom = null, shapeTo = null, shapeCurId = 'blob';
+let shapeMorphStart = 0;
+function startShapeMorph(id) {
+  const to = shapeRing(id);
+  if (!to || id === shapeCurId) return;
+  shapeFrom = shapeCurId ? curShapeRing() : shapeRing('blob');
+  shapeTo = to;
+  shapeMorphStart = performance.now();
+  shapeCurId = id;
+}
+function shapeProgress() {
+  return clamp((performance.now() - shapeMorphStart) / SHAPE_MORPH_MS, 0, 1);
+}
+function curShapeRing() {
+  const t = SPRING_EASE(shapeProgress());
+  const from = shapeFrom || shapeRing(shapeCurId) || shapeRing('blob');
+  const to = shapeTo || shapeRing(shapeCurId) || from;
+  return from.map((p, i) => [p[0] + (to[i][0] - p[0]) * t, p[1] + (to[i][1] - p[1]) * t]);
+}
+function applyShape(id) {
   const item = GROKBOT_SHAPES.find(s => s[0] === id);
   if (!item) return;
+  stopShapeShow();   // 手动选形状：先中断变形秀
   selectedShape = item;
-  bodyPath.setAttribute('d', item[2]);
-  clipPathEl.setAttribute('d', item[2]);
+  startShapeMorph(id);
+}
+
+/* ===== 变形秀：圆 →(右键形状随机一个)→ 圆（常驻球态，中途变一次再变回） ===== */
+const SHOW_SHAPES = GROKBOT_SHAPES.filter(s => s[0] !== 'blob' && s[0] !== 'exclaim').map(s => s[0]);
+let shapeShow = null, shapeShowStep = 0, shapeShowSeq = [];
+function startShapeShow() {
+  if (shapeShow) return;
+  const target = SHOW_SHAPES[Math.floor(Math.random() * SHOW_SHAPES.length)];
+  shapeShowSeq = ['blob', target, 'blob'];
+  shapeShow = { timer: null };
+  shapeShowStep = 0;
+  fxLayer.classList.add('fx-orbit'); // 变换期间彩色霓虹环绕（视频同款）
+  shapeShowTick();
+}
+function stopShapeShow() {
+  if (!shapeShow) return;
+  clearTimeout(shapeShow.timer);
+  shapeShow = null;
+  fxLayer.classList.remove('fx-orbit');
+  if (shapeCurId !== selectedShape[0]) startShapeMorph(selectedShape[0]); // 回到用户选的形状
+}
+function shapeShowTick() {
+  if (!shapeShow) return;
+  if (shapeShowStep >= shapeShowSeq.length) { stopShapeShow(); return; }
+  startShapeMorph(shapeShowSeq[shapeShowStep]);
+  shapeShowStep++;
+  shapeShow.timer = setTimeout(shapeShowTick, 3400);
 }
 
 /* ===== 尺寸控制（每次缩小 1/3） + 配饰开关 ===== */
@@ -432,10 +745,11 @@ function blink() { blinkStart = performance.now(); }
 function frame(now) {
   const dt = Math.min((now - last) / 1000, .1);
   last = now;
-  velocity += (-10 * velocity - 36 * (morph - 1)) * dt;
+  velocity += (-14 * velocity - 49 * (morph - 1)) * dt;  // LaoA 原生弹簧参数（更快更弹）
   morph += velocity * dt;
   if (!Number.isFinite(morph)) { morph = 1; velocity = 0; }
   const shown = rings(), bs = blinkScale(now), rad = turn * Math.PI / 180;
+  const eyeFade = eyeFadeSpring.step(eyeFadeSpring.target, dt);  // Grok 感叹号时眼睛淡出
   eyePulse = Math.max(0, eyePulse - dt * 3.2);
   const pulseScale = 1 + Math.sin(eyePulse * Math.PI) * 0.14;
   const loop = STATE_LOOP[activeState] || null;
@@ -455,7 +769,7 @@ function frame(now) {
       y = c[1] + gazeY + loopEyeY;
     eyeEls[i].setAttribute('d', smoothRing(ring));
     eyeEls[i].setAttribute('transform', `translate(${x} ${y}) scale(${clamp(perspective, .02, 2.4) * pulseScale} ${bs}) translate(${-c[0]} ${-c[1]})`);
-    eyeEls[i].style.opacity = depth > .02 ? '1' : '0';
+    eyeEls[i].style.opacity = depth > .02 ? eyeFade.toFixed(3) : '0';
   });
 
   const bodyY = bodySprings.y.step(bodySprings.y.target, dt);
@@ -506,8 +820,30 @@ function frame(now) {
   const finalRot = bodyRot + rRot + breathRot + tiltVal + loopRot;
   const finalSX = bodySX * rSX * rScale * breathScale * loopSX;
   const finalSY = bodySY * rSY * rScale * (2 - breathScale) * loopSY;
+  /* ---- 身体形状 morph 渲染（贝塞尔弹簧缓动 + clip 联动） ---- */
+  const shapeP = shapeProgress();
+  const shapeT = SPRING_EASE(shapeP);
+  let shapeD;
+  if (shapeCurId === 'blob' && shapeP >= 1) {
+    // blob（原始形态）常驻：直接用原始 SVG path，100% 丝滑曲线，绝不多边感
+    shapeD = GROKBOT_SHAPES[0][2];
+  } else {
+    const sFrom = shapeFrom || shapeRing(shapeCurId) || shapeRing('blob');
+    const sTo = shapeTo || shapeRing(shapeCurId) || sFrom;
+    const curRing = sFrom.map((p, i) => [p[0] + (sTo[i][0] - p[0]) * shapeT, p[1] + (sTo[i][1] - p[1]) * shapeT]);
+    const shapeItem = GROKBOT_SHAPES.find(s => s[0] === shapeCurId);
+    shapeD = smoothRing(curRing, shapeItem ? shapeItem[3] : 1);
+  }
+  bodyPath.setAttribute('d', shapeD);
+  clipPathEl.setAttribute('d', shapeD);
+  bodyShine.setAttribute('d', shapeD); // Grok 主题光泽高光跟随身体变形
+  exclaimDotEl.style.opacity = shapeCurId === 'exclaim' ? (grokActive ? '1' : '0') : '0'; // Grok 感叹号底部圆点
+
+  /* ---- Grok tiny/loading 身体缩放（绕中心，果冻回弹） ---- */
+  const tinyScale = tinySpring.step(tinySpring.target, dt);
+
   springGroup.setAttribute('transform',
-    `translate(0 ${finalY.toFixed(2)}) rotate(${finalRot.toFixed(2)} 114 114) scale(${finalSX.toFixed(3)} ${finalSY.toFixed(3)})`);
+    `translate(114 114) scale(${tinyScale.toFixed(4)}) translate(-114 -114) translate(0 ${finalY.toFixed(2)}) rotate(${finalRot.toFixed(2)} 114 114) scale(${finalSX.toFixed(3)} ${finalSY.toFixed(3)})`);
 
   // 3D 转向（拖动时驱动，平时回正）
   const yaw = yawSpring.step(yawSpring.target, dt);
@@ -527,7 +863,9 @@ function pausePet() {
   autoPaused = true;
   cancelAnimationFrame(rafId); rafId = null;
   clearTimeout(stateTimer); clearTimeout(exprTimer); clearTimeout(blinkTimer); clearTimeout(chatterTimer); clearTimeout(tagTimer);
-  clearInterval(fxSpawnTimer); clearInterval(fxFwTimer);
+  clearInterval(fxSpawnTimer); clearInterval(fxFwTimer); clearInterval(fxBurstTimer);
+  stopShapeShow();                           // 暂停时中断变形秀
+  stopGrokShow();                            // 暂停时中断 Grok 状态机
   fxLayer.className = '';                       // 关掉特效层（停止合成器活动）
   showMood('zzZ…去歇会儿');
 }
@@ -537,6 +875,7 @@ function resumePet() {
   autoPaused = false;
   last = performance.now();
   if (!rafId) rafId = requestAnimationFrame(frame);
+  if (theme === 'grok') startGrokShow();  // Grok 主题恢复状态机
   cycleExpr(); changeState(); scheduleBlinkPet(); scheduleChatter();
   showMood('我醒啦~');
 }
@@ -604,9 +943,29 @@ function spawnFxParticle(type) {
   setTimeout(() => s.remove(), 1800);
 }
 const FX_RING = { orbit: 'fx-orbit', radar: 'fx-radar', loading: 'fx-loading', alerting: 'fx-alert', searching: 'fx-scan' };
+const FX_DOTS = new Set(['loading', 'dictating', 'writing', 'uploading', 'sending', 'receiving']);
 const FX_PARTICLE = { happy: 360, excited: 220, sleeping: 600, humming: 520, thinking: 700, celebrate: 90, sad: 500, surprised: 380, scared: 420, angry: 340, laughing: 300 };
+const FX_BURST = { working: 1500, sending: 1100, receiving: 1100, uploading: 1300, dictating: 1700, writing: 1500 };
 const FX_FIREWORK = { celebrate: 850 };
-let fxFwTimer = null;
+let fxFwTimer = null, fxBurstTimer = null;
+// 粒子喷溅：从身体边缘随机角度喷出彩色小点（工作流状态）
+function spawnBurst(n = 12) {
+  const cols = ['#ff5d9e', '#2f86ed', '#08c77a', '#ff9800', '#8656f6', '#ffd84d', '#79e2d0'];
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('span');
+    s.className = 'fx-fw';
+    const ang = Math.random() * Math.PI * 2;
+    const dist = 42 + Math.random() * 68;
+    const col = cols[Math.floor(Math.random() * cols.length)];
+    s.style.left = (114 + Math.cos(ang) * 28).toFixed(1) + 'px';
+    s.style.top = (114 + Math.sin(ang) * 28).toFixed(1) + 'px';
+    s.style.background = col; s.style.boxShadow = '0 0 6px ' + col;
+    s.style.setProperty('--dx', (Math.cos(ang) * dist).toFixed(1) + 'px');
+    s.style.setProperty('--dy', (Math.sin(ang) * dist).toFixed(1) + 'px');
+    fxLayer.appendChild(s);
+    setTimeout(() => s.remove(), 1000);
+  }
+}
 // 烟花：火箭上升 → 顶点绽放成彩光，搭配'快看，烟花！'场景
 function spawnFirework() {
   const cx = 75 + Math.random() * 90;
@@ -640,14 +999,26 @@ function spawnFirework() {
 }
 function setEffect(state) {
   fxLayer.className = '';
-  clearInterval(fxSpawnTimer); clearInterval(fxFwTimer);
-  fxSpawnTimer = null; fxFwTimer = null;
+  clearInterval(fxSpawnTimer); clearInterval(fxFwTimer); clearInterval(fxBurstTimer);
+  fxSpawnTimer = null; fxFwTimer = null; fxBurstTimer = null;
+  const dots = fxLayer.querySelector('.fx-dots');
+  if (dots) dots.remove();
   const ring = FX_RING[state];
   if (ring) fxLayer.classList.add(ring);
+  if (FX_DOTS.has(state)) {
+    const d = document.createElement('div');
+    d.className = 'fx-dots';
+    d.innerHTML = '<i></i><i></i><i></i>';
+    fxLayer.appendChild(d);
+  }
   if (FX_PARTICLE[state]) {
     const rate = FX_PARTICLE[state];
     for (let i = 0; i < (state === 'celebrate' ? 10 : 2); i++) spawnFxParticle(state);
     fxSpawnTimer = setInterval(() => { if (!autoPaused) spawnFxParticle(state); }, rate);
+  }
+  if (FX_BURST[state]) {
+    spawnBurst();
+    fxBurstTimer = setInterval(() => { if (!autoPaused) spawnBurst(); }, FX_BURST[state]);
   }
   if (FX_FIREWORK[state]) {
     spawnFirework();
@@ -691,6 +1062,7 @@ function petSetState(name) {
 }
 function cycleExpr() {
   clearTimeout(exprTimer);
+  if (theme === 'grok') return;                     // Grok 主题下表情由 Grok 状态机接管
   if (autoPaused) { exprTimer = setTimeout(cycleExpr, 2000); return; }
   const pool = DATA.POOLS[activeState] || [];
   if (!pool.length) { exprTimer = setTimeout(cycleExpr, 3000); return; } // 容错
@@ -702,25 +1074,28 @@ function cycleExpr() {
 }
 function changeState() {
   clearTimeout(stateTimer);
+  if (theme === 'grok') return;                     // Grok 主题下状态由 Grok 状态机接管
   if (autoPaused) { stateTimer = setTimeout(changeState, 3000); return; }
   try {
     let s; do { s = pickState(); } while (s === activeState && ALL_STATES.length > 1);
     petSetState(s);
     if (Math.random() < 0.28) playQuickAction(pick(['bounce','peek','wave','squish','shake']));
     if (Math.random() < 0.14) applyColor(pick(GROKBOT_COLORS));
+    if (Math.random() < 0.10) startShapeShow();   // 变形秀彩蛋：圆→随机形状→圆（10% 概率，常驻球态）
   } catch (e) { /* 单次异常不卡死轮询 */ }
   stateTimer = setTimeout(changeState, rand(7000, 13000));
 }
 function scheduleBlinkPet() {
   clearTimeout(blinkTimer);
   blinkTimer = setTimeout(() => {
-    if (!autoPaused && DATA.BLINK[activeState]) blink();
+    if (!autoPaused && (theme === 'grok' || DATA.BLINK[activeState])) blink();
     scheduleBlinkPet();
   }, rand(2200, 5200));
 }
 // 偶尔自言自语（工作流语句），让小脸更"活"
 function scheduleChatter() {
   clearTimeout(chatterTimer);
+  if (theme === 'grok') return;                     // Grok 极简：不自言自语
   chatterTimer = setTimeout(() => {
     if (!autoPaused && !dragging) showLine(activeState);
     scheduleChatter();
@@ -768,11 +1143,21 @@ function endDrag() {
   yawSpring.target = 0; pitchSpring.target = 0;
   if (window.electronAPI && window.electronAPI.dragEnd) window.electronAPI.dragEnd();
   if (moveDist < 6) {
-    // 摸头撒娇：爱心上浮 + 傲娇台词 + 轻柔挤压
-    reaction = { type: 'squash', t: 0, dur: 620 };
-    eyePulse = 1; blink();
-    for (let i = 0; i < 3; i++) setTimeout(() => spawnFxParticle('happy'), i * 180);
-    showMood(pick(['嘿嘿~被摸头啦','舒服～(◡‿◡)','再来一下嘛','哎呀别戳啦']));
+    if (theme === 'grok') {
+      // Grok 主题：单击 = 随机切换一个状态/表情（规格交互要求）
+      const name = pick(GROK_ORDER);
+      grokSetState(name);
+      clearTimeout(grokTimer);
+      const def = GROK_SHAPES_DEF[name];
+      grokTimer = setTimeout(grokNext, rand(def.dur[0], def.dur[1]));
+      showMood(pick(['嗯？', '嘿嘿', '在呢', '戳我干嘛']));
+    } else {
+      // 摸头撒娇：爱心上浮 + 傲娇台词 + 轻柔挤压
+      reaction = { type: 'squash', t: 0, dur: 620 };
+      eyePulse = 1; blink();
+      for (let i = 0; i < 3; i++) setTimeout(() => spawnFxParticle('happy'), i * 180);
+      showMood(pick(['嘿嘿~被摸头啦','舒服～(◡‿◡)','再来一下嘛','哎呀别戳啦']));
+    }
   }
 }
 window.addEventListener('pointerup', endDrag);
@@ -818,7 +1203,7 @@ scheduleChatter();
 function applyColorByHex(hex) {
   const item = GROKBOT_COLORS.find(c => c[2].toLowerCase() === hex.toLowerCase());
   if (item) applyColor(item);
-  else { document.documentElement.style.setProperty('--bot-color', hex); }
+  else if (theme !== 'grok') { document.documentElement.style.setProperty('--bot-color', hex); }
 }
 window.moodiePet = {
   nextMood: () => { const s = pick(ALL_STATES.filter(x => x !== activeState)) || pick(ALL_STATES); petSetState(s); },
@@ -831,7 +1216,8 @@ window.moodiePet = {
 // Electron 右键菜单回调
 if (window.electronAPI && window.electronAPI.onMenuAction) {
   window.electronAPI.onMenuAction((action) => {
-    if (action.indexOf('color:') === 0) { applyColorByHex(action.slice(6)); showMood('换色~'); }
+    if (action.indexOf('theme:') === 0) { applyTheme(action.slice(6)); showMood(action.slice(6) === 'grok' ? 'Sonnet 极简风 ✓' : '彩色风 ✓'); }
+    else if (action.indexOf('color:') === 0) { applyColorByHex(action.slice(6)); showMood('换色~'); }
     else if (action.indexOf('shape:') === 0) { applyShape(action.slice(6)); showMood('变' + (selectedShape[1]) + '～'); }
     else if (action.indexOf('accessory:') === 0) { toggleAccessory(action.slice(10)); }
     else if (action.indexOf('size:') === 0) {
