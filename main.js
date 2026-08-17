@@ -110,7 +110,7 @@ ipcMain.on('pet:menu', () => {
       submenu: [
         { label: '缩小（×2/3）', click: () => send('size:minus') },
         { label: '放大（×3/2）', click: () => send('size:plus') },
-        { label: '原始大小', click: () => send('size:reset') },
+        { label: '默认大小（×2/3）', click: () => send('size:reset') },
       ],
     },
     {

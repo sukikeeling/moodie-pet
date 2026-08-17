@@ -230,10 +230,14 @@
     55%  { transform:translate(var(--dx2), var(--dy2)) scale(1.05) rotate(58deg); opacity:.95; }
     100% { transform:translate(var(--dx), var(--dy)) scale(1.4) rotate(92deg); opacity:0; }
   }
+  /* 线条爆发：短彩色线段从球体表面向外甩出带弧线（视频同款） */
   .fx-dot { width:9px; height:9px; border-radius:50%; background:#4a3a5e; animation:fx-bob 1.2s ease-in-out forwards; }
   .fx-confetti { width:8px; height:12px; border-radius:2px; animation:fx-burst 1.5s ease-out forwards; }
-  .fx-fw { position:absolute; width:5px; height:5px; border-radius:50%; animation:fw-burst .95s ease-out forwards; }
-  @keyframes fw-burst { 0%{transform:translate(0,0) scale(1.3);opacity:1} 60%{opacity:1} 100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0} }
+  .fx-fw { position:absolute; width:8px; height:8px; border-radius:50%; animation:fw-burst 1.1s ease-out forwards; }
+  @keyframes fw-burst { 0%{transform:translate(0,0) scale(1.5);opacity:1} 50%{opacity:1} 100%{transform:translate(var(--dx),var(--dy)) scale(0.2);opacity:0} }
+  /* 蜡笔触彩虹弧线：弯曲彩色渐变线条，粗细变化，多层交叉（z-index 在球前） */
+  .fx-crayon { position:absolute; left:0; top:0; width:228px; height:228px; pointer-events:none; z-index:5; }
+  .fx-crayon path { fill:none; stroke-linecap:round; stroke-linejoin:round; }
   .fx-rocket { position:absolute; width:4px; height:4px; border-radius:50%; animation:fw-rise .55s ease-out forwards; }
   @keyframes fw-rise { 0%{transform:translateY(0);opacity:1} 75%{opacity:1} 100%{transform:translateY(var(--rise,-160px));opacity:0} }
   .fx-tear { position:absolute; color:#5ec5ff; font-size:14px; text-shadow:0 0 5px rgba(94,197,255,.6); animation:fx-fall 1.6s ease-in forwards; }
@@ -293,11 +297,12 @@
   </div>
 
 <script src="data.js"></script>
+<script src="morph-engine.js"></script>
 <script>
 "use strict";
 /* ============================================================
    Moodie 桌宠引擎 —— 移植自 moodie.html（精简：去除 UI，保留表现力）
-   数据：data.js（25 表情坐标 + 39 状态节奏/眨眼）
+   数据：data.js + morph-engine.js（形状定义与弹簧引擎）
    新增：自动轮询表情 / 3D 拖动转向+移动 / 桌面穿透点击
    ============================================================ */
 const DATA = window.GROKBOT_ORIGINAL;
@@ -375,37 +380,8 @@ const randLine = state => {
   _lastLine = l;
   return l;
 };
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const centroid = ring => ring.reduce((a, p) => [a[0] + p[0] / ring.length, a[1] + p[1] / ring.length], [0, 0]);
-const path = ring => 'M' + ring.map(p => `${p[0].toFixed(2)} ${p[1].toFixed(2)}`).join('L') + 'Z';
-const smoothRing = (ring, tension = 1) => {
-  if (ring.length < 3) return path(ring);
-  const r = v => Math.round(v * 100) / 100;
-  const n = ring.length;
-  let d = `M${r(ring[0][0])},${r(ring[0][1])}`;
-  for (let i = 0; i < n; i++) {
-    const prev = ring[(i - 1 + n) % n], cur = ring[i], next = ring[(i + 1) % n], after = ring[(i + 2) % n];
-    const c1 = [cur[0] + ((next[0] - prev[0]) / 6) * tension, cur[1] + ((next[1] - prev[1]) / 6) * tension];
-    const c2 = [next[0] - ((after[0] - cur[0]) / 6) * tension, next[1] - ((after[1] - cur[1]) / 6) * tension];
-    d += `C${r(c1[0])},${r(c1[1])} ${r(c2[0])},${r(c2[1])} ${r(next[0])},${r(next[1])}`;
-  }
-  return d + 'Z';
-};
 
 /* ===== 弹簧身体 + 姿态 + 点击反应 ===== */
-class Spring {
-  constructor(value, stiffness = 210, damping = 22, mass = 0.8) {
-    this.x = value; this.v = 0;
-    this.stiffness = stiffness; this.damping = damping; this.mass = mass;
-    this.target = value;
-  }
-  step(target, dt) {
-    const a = (-this.stiffness * (this.x - target) - this.damping * this.v) / this.mass;
-    this.v += a * dt;
-    this.x += this.v * dt;
-    return this.x;
-  }
-}
 const PERF_PALETTE = [
   { y: -2, scaleY: 0.92 },
   { y: -5, rotate: 2, scaleX: 1.08, scaleY: 1.12 },
@@ -591,152 +567,8 @@ function applyTheme(t) {
 // 浏览器（非 Electron）打开：纯白演示背景
 if (!(window.electronAPI && window.electronAPI.isElectron)) document.body.classList.add('web-demo');
 
-/* ===== 身体形状 morph 引擎（弹簧插值，任意形状间丝滑果冻过渡） =====
-   形状定义：[id, 中文名, path(采样源), tension(贝塞尔圆滑度: 0=直线 1=顺滑)]
-   ring 数据：用 SVG getPointAtLength 从 path 均匀采样 240 点 → 从质心按角度 48 等分重采样
-   （角度对齐保证 morph 不旋转漂移；每形状仅采样一次并缓存） */
-const GROKBOT_SHAPES = [
-  ['blob','原始形态','M228.541 114.228C228.541 130.133 225.184 145.994 218.738 160.534C212.674 174.217 203.904 186.669 193.065 196.988C155.933 232.34 99.497 238.596 55.5255 212.24C45.097 205.99 35.6851 198.072 27.7451 188.866C19.1926 178.953 12.3686 167.569 7.65781 155.351C2.60712 142.264 0 128.257 0 114.228C0 98.3219 3.35751 82.4611 9.80315 67.9215C15.8672 54.2382 24.6377 41.7862 35.4767 31.4668C72.6081 -3.88483 129.044 -10.1413 173.016 16.2153C183.444 22.4653 192.856 30.3829 200.796 39.5896C209.349 49.5018 216.173 60.8859 220.883 73.1037C225.934 86.1906 228.541 100.198 228.541 114.228Z', 1],
-  ['pebble','鹅卵石','M114 8C177 8 217 45 217 109C217 178 181 219 112 219C43 219 12 181 12 113C12 48 51 8 114 8Z', 1],
-  ['squircle','圆角方','M55 10H174Q219 10 219 55V174Q219 219 174 219H55Q10 219 10 174V55Q10 10 55 10Z', .3],
-  ['capsule','胶囊','M61 31H168C202 31 220 65 220 114C220 163 202 197 168 197H61C27 197 9 163 9 114C9 65 27 31 61 31Z', .55],
-  ['triangle','三角体','M114 9Q122 9 128 21L220 194Q227 210 207 210H21Q1 210 9 194L101 21Q106 9 114 9Z', .12],
-  ['hex','六边体','M114 5L207 58Q218 64 218 78V153Q218 167 207 173L128 218Q114 226 100 218L21 173Q10 167 10 153V78Q10 64 21 58L100 12Q114 5 114 5Z', .25],
-  ['cloud','云朵','M55 188C21 188 6 169 12 142C-1 113 20 86 51 84C61 48 96 35 124 55C151 28 195 46 195 82C226 91 235 128 213 149C214 174 193 190 165 188Z', 1],
-  ['drop','水滴','M114 5C137 42 202 103 202 151C202 196 165 222 114 222C63 222 26 196 26 151C26 103 91 42 114 5Z', 1],
-  ['egg','蛋形','M114.27 8C150 8 198 22 198 96C198 178 158 225 114.27 225C70 225 30 178 30 96C30 22 78 8 114.27 8Z', 1],
-  ['bean','豆形','M196 90C196 160 170 215 114 215C90 215 70 205 60 188C52 175 52 150 58 128C46 120 40 105 40 90C40 45 70 20 114 20C158 20 196 45 196 90Z', .8],
-  ['teardrop','水滴2','M114.27 6C168 6 200 40 200 92C200 150 160 205 114.27 224C68 205 28 150 28 92C28 40 60 6 114.27 6Z', 1],
-  ['exclaim','感叹号','M86 40Q86 30 96 30L132 30Q142 30 142 40L142 180Q142 190 132 190L96 190Q86 190 86 180Z', .45],
-];
-const shapeRingCache = new Map();
-function sampleShapeRing(d, n = 48) {
-  const svg = document.querySelector('#bot');
-  const tmp = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  tmp.setAttribute('d', d);
-  svg.appendChild(tmp);
-  const L = tmp.getTotalLength();
-  const M = 360, pts = [];
-  for (let i = 0; i < M; i++) { const p = tmp.getPointAtLength((L * i) / M); pts.push([p.x, p.y]); }
-  svg.removeChild(tmp);
-  const cx = pts.reduce((a, p) => a + p[0], 0) / M;
-  const cy = pts.reduce((a, p) => a + p[1], 0) / M;
-  const ring = [];
-  const binHalf = (Math.PI * 2 / n) * 0.8; // bin 采样范围（略大于半 bin，防空洞）
-  // 最小角差（正确处理跨 ±π 边界：diff ∈ [0, π]）
-  const angDiff = (a1, a2) => Math.abs(((a1 - a2 + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI);
-  for (let i = 0; i < n; i++) {
-    const ang = (2 * Math.PI * i) / n - Math.PI / 2; // 从顶部顺时针
-    // 每个角度 bin 选「方向最接近 + 距离质心最远」的点 = 真实外轮廓点（凸形状天然无尖角）
-    let best = -1, bestDist = -Infinity, bestDiff = Infinity;
-    for (let j = 0; j < M; j++) {
-      const p = pts[j];
-      const diff = angDiff(Math.atan2(p[1] - cy, p[0] - cx), ang);
-      if (diff > binHalf) continue;
-      const d0 = Math.hypot(p[0] - cx, p[1] - cy);
-      if (d0 > bestDist || (d0 === bestDist && diff < bestDiff)) { bestDist = d0; bestDiff = diff; best = j; }
-    }
-    if (best >= 0) {
-      ring.push([+pts[best][0].toFixed(3), +pts[best][1].toFixed(3)]);
-    } else {
-      // 空洞兜底：取角度最近的点
-      let fb = -1, fbDiff = Infinity;
-      for (let j = 0; j < M; j++) {
-        const p = pts[j];
-        const diff = angDiff(Math.atan2(p[1] - cy, p[0] - cx), ang);
-        if (diff < fbDiff) { fbDiff = diff; fb = j; }
-      }
-      const p = fb >= 0 ? pts[fb] : [cx, cy];
-      ring.push([+p[0].toFixed(3), +p[1].toFixed(3)]);
-    }
-  }
-  return ring;
-}
-function shapeRing(id) {
-  if (shapeRingCache.has(id)) return shapeRingCache.get(id);
-  const item = GROKBOT_SHAPES.find(s => s[0] === id);
-  if (!item) return null;
-  const ring = sampleShapeRing(item[2]);
-  shapeRingCache.set(id, ring);
-  return ring;
-}
-let selectedShape = GROKBOT_SHAPES[0];
 const bodyPath = document.querySelector('#shape-body-path'), clipPathEl = document.querySelector('#shape-clip-path');
 const bodyShine = document.querySelector('#body-shine');
-
-/* ---- 大佬 svg-film skill 的贝塞尔弹簧：cubic-bezier(0.34, 1.18, 0.30, 1) ----
-   y=1.18 超调 → 果冻回弹；牛顿法求解，逐点插值 morph（视频同款质感） */
-function bezierEase(x1, y1, x2, y2) {
-  const cx = 3 * x1, cy = 3 * y1;
-  const bx = 3 * (x2 - x1) - cx, by = 3 * (y2 - y1) - cy;
-  const ax = 1 - cx - bx, ay = 1 - cy - by;
-  return function (p) {
-    if (p <= 0) return 0; if (p >= 1) return 1;
-    let t = p;
-    for (let i = 0; i < 6; i++) {
-      const e = ((ax * t + bx) * t + cx) * t - p;
-      const d = (3 * ax * t + 2 * bx) * t + cx;
-      if (Math.abs(e) < 1e-5 || Math.abs(d) < 1e-6) break;
-      t -= e / d;
-    }
-    return ((ay * t + by) * t + cy) * t;
-  };
-}
-const SPRING_EASE = bezierEase(0.34, 1.18, 0.30, 1);
-const SHAPE_MORPH_MS = 480; // 形状 morph 时长（skill 默认 duration）
-let shapeFrom = null, shapeTo = null, shapeCurId = 'blob';
-let shapeMorphStart = 0;
-function startShapeMorph(id) {
-  const to = shapeRing(id);
-  if (!to || id === shapeCurId) return;
-  shapeFrom = shapeCurId ? curShapeRing() : shapeRing('blob');
-  shapeTo = to;
-  shapeMorphStart = performance.now();
-  shapeCurId = id;
-}
-function shapeProgress() {
-  return clamp((performance.now() - shapeMorphStart) / SHAPE_MORPH_MS, 0, 1);
-}
-function curShapeRing() {
-  const t = SPRING_EASE(shapeProgress());
-  const from = shapeFrom || shapeRing(shapeCurId) || shapeRing('blob');
-  const to = shapeTo || shapeRing(shapeCurId) || from;
-  return from.map((p, i) => [p[0] + (to[i][0] - p[0]) * t, p[1] + (to[i][1] - p[1]) * t]);
-}
-function applyShape(id) {
-  const item = GROKBOT_SHAPES.find(s => s[0] === id);
-  if (!item) return;
-  stopShapeShow();   // 手动选形状：先中断变形秀
-  selectedShape = item;
-  startShapeMorph(id);
-}
-
-/* ===== 变形秀：圆 →(右键形状随机一个)→ 圆（常驻球态，中途变一次再变回） ===== */
-const SHOW_SHAPES = GROKBOT_SHAPES.filter(s => s[0] !== 'blob' && s[0] !== 'exclaim').map(s => s[0]);
-let shapeShow = null, shapeShowStep = 0, shapeShowSeq = [];
-function startShapeShow() {
-  if (shapeShow) return;
-  const target = SHOW_SHAPES[Math.floor(Math.random() * SHOW_SHAPES.length)];
-  shapeShowSeq = ['blob', target, 'blob'];
-  shapeShow = { timer: null };
-  shapeShowStep = 0;
-  fxLayer.classList.add('fx-orbit'); // 变换期间彩色霓虹环绕（视频同款）
-  shapeShowTick();
-}
-function stopShapeShow() {
-  if (!shapeShow) return;
-  clearTimeout(shapeShow.timer);
-  shapeShow = null;
-  fxLayer.classList.remove('fx-orbit');
-  if (shapeCurId !== selectedShape[0]) startShapeMorph(selectedShape[0]); // 回到用户选的形状
-}
-function shapeShowTick() {
-  if (!shapeShow) return;
-  if (shapeShowStep >= shapeShowSeq.length) { stopShapeShow(); return; }
-  startShapeMorph(shapeShowSeq[shapeShowStep]);
-  shapeShowStep++;
-  shapeShow.timer = setTimeout(shapeShowTick, 3400);
-}
 
 /* ===== 尺寸控制（每次缩小 1/3） + 配饰开关 ===== */
 let petScale = 1;
@@ -903,7 +735,7 @@ function pausePet() {
   autoPaused = true;
   cancelAnimationFrame(rafId); rafId = null;
   clearTimeout(stateTimer); clearTimeout(exprTimer); clearTimeout(blinkTimer); clearTimeout(chatterTimer); clearTimeout(tagTimer);
-  clearTimeout(sketchTimer);
+  clearTimeout(sketchTimer); clearTimeout(initTimer);
   clearInterval(fxSpawnTimer); clearInterval(fxFwTimer); clearInterval(fxBurstTimer);
   clearInterval(fxNoteTimer); clearInterval(fxStarTimer);
   stopCurveFx();
@@ -966,7 +798,7 @@ function spawnFxParticle(type) {
     case 'excited': cls = 'fx-spark'; content = '✦'; break;
     case 'sleeping': cls = 'fx-z'; content = 'Z'; s.style.setProperty('--dx', (Math.random() * 30 - 15) + 'px'); break;
     case 'humming': cls = 'fx-note'; content = '♪'; s.style.setProperty('--dx', (Math.random() * 40 - 20) + 'px'); break;
-    case 'thinking': cls = 'fx-dot'; break;
+    case 'thinking': cls = 'fx-dot'; s.style.background = ['#ff5d9e','#ff9800','#ffd84d','#08c77a','#2f86ed','#8656f6','#79e2d0'][Math.floor(Math.random()*7)]; break;
     case 'sad': cls = 'fx-tear'; content = '💧'; s.style.left = (90 + Math.random()*50) + 'px'; break;
     case 'surprised': case 'scared': cls = 'fx-exclaim'; content = '!'; s.style.left = (105 + Math.random()*20) + 'px'; s.style.top = (40 + Math.random()*20) + 'px'; break;
     case 'angry': cls = 'fx-steam'; s.style.left = (95 + Math.random()*40) + 'px'; s.style.top = (90 + Math.random()*20) + 'px'; break;
@@ -1116,7 +948,6 @@ const MATH_CURVES = {
 };
 const FX_CURVE = { thinking: 'circle', loading: 'rose', working: 'lissajous' };
 let curveFx = null; // { kind, wrap, path, pts[], start, raf, cfg }
-function normalizeProgress(p) { return ((p % 1) + 1) % 1; }
 function curveDetailScale(time, cfg, phase) {
   const pp = ((time + phase * cfg.pulseDurationMs) % cfg.pulseDurationMs) / cfg.pulseDurationMs;
   return 0.98 + ((Math.sin(pp * Math.PI * 2 + 0.55) + 1) / 2) * 0.02;   // 0.98~1.0 微呼吸：粒子始终在球边界外侧
@@ -1187,6 +1018,34 @@ function stopCurveFx() {
   curveFx = null;
 }
 
+// 蜡笔触彩虹弧线：弯曲彩色渐变线条，粗细压感变化，甩动感（核心新特效）
+function spawnCrayonArc(opts) {
+  const { sx, sy, cx, cy, ex, ey, colors, widths, dur, delay } = opts;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'fx-crayon');
+  svg.setAttribute('viewBox', '0 0 228 228');
+  const d = `M${sx} ${sy} Q${cx} ${cy} ${ex} ${ey}`;
+  colors.forEach((col, i) => {
+    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    p.setAttribute('d', d); p.setAttribute('stroke', col);
+    p.setAttribute('stroke-width', String(widths[i] || 3));
+    svg.appendChild(p);
+  });
+  fxLayer.appendChild(svg);
+  const len = svg.querySelector('path').getTotalLength() || 200;
+  svg.querySelectorAll('path').forEach(p => {
+    p.style.strokeDasharray = String(len);
+    p.style.strokeDashoffset = String(len);
+    p.animate([
+      { strokeDashoffset: len, opacity: 0 },
+      { strokeDashoffset: len * 0.4, opacity: 0.85, offset: 0.25 },
+      { strokeDashoffset: 0, opacity: 0.85, offset: 0.55 },
+      { strokeDashoffset: -len * 0.15, opacity: 0 }
+    ], { duration: dur || 1200, delay: delay || 0, easing: 'ease-out', fill: 'forwards' });
+  });
+  setTimeout(() => svg.remove(), (dur || 1200) + (delay || 0) + 300);
+}
+
 function setEffect(state) {
   fxLayer.className = '';
   stopCurveFx();
@@ -1226,6 +1085,28 @@ function setEffect(state) {
     spawnFirework();
     fxFwTimer = setInterval(() => { if (!autoPaused) spawnFirework(); }, FX_FIREWORK[state]);
   }
+  // 蜡笔触彩虹弧线：挂到高频状态（thinking/excited/orbit），大幅加粗加亮
+  if (state === 'thinking' || state === 'excited' || state === 'orbit') {
+    // 动作1（excited）：圆→三角→圆 + 彩虹弧线从右上角甩出 + 环绕 + 粒子
+    if (state === 'excited') {
+      startShapeMorph('squircle');  // 圆角方（接近圆角三角）
+      setTimeout(() => { startShapeMorph('blob'); }, 3000);
+    }
+    const bigArc = (sx, sy, cx, cy, ex, ey, cols, ws, del, dur) => setTimeout(() => spawnCrayonArc({
+      sx, sy, cx, cy, ex, ey, colors: cols, widths: ws, dur: dur || 2000, delay: 0
+    }), del || 0);
+    // 第1波：从右上角(160,40)甩出3条彩虹短弧线，加粗到20-30px
+    bigArc(160, 40, 180, 80, 80, 170, ['#ff5d9e','#ff9800','#ffd84d'], [28,18,10], 0);
+    bigArc(160, 40, 100, 30, 50, 140, ['#08c77a','#2f86ed','#8656f6'], [24,15,8], 350);
+    bigArc(160, 40, 190, 130, 30, 170, ['#79e2d0','#ff5d9e','#8656f6'], [20,12,6], 700);
+    // 第2波：弧线环绕（从三角三个角的位置）
+    bigArc(30, 30, 60, 20, 114, 190, ['#ffd84d','#08c77a','#2f86ed'], [18,12,7], 1400, 1800);
+    bigArc(200, 30, 190, 100, 114, 190, ['#ff5d9e','#8656f6','#ff9800'], [18,12,7], 1500, 1800);
+    bigArc(114, 190, 50, 170, 114, 30, ['#79e2d0','#ffd84d','#ff5d9e'], [16,10,5], 1600, 1800);
+    // 粒子爆发
+    spawnBurst(10);
+    setTimeout(() => { if (!autoPaused) spawnBurst(12); }, 1000);
+  }
 }
 
 /* ===== 自动轮询：状态切换 + 表情循环 + 眨眼 + 偶发小动作 ===== */
@@ -1233,7 +1114,7 @@ const ALL_STATES = Object.values(DATA.GROUPS).flat();
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 let autoPaused = false;
-let stateTimer = null, exprTimer = null, blinkTimer = null, tagTimer = null, chatterTimer = null;
+let stateTimer = null, exprTimer = null, blinkTimer = null, tagTimer = null, chatterTimer = null, initTimer = null;
 
 function showMood(text) {
   moodTag.textContent = text;
@@ -1258,7 +1139,7 @@ function petSetState(name) {
   else chooseExpression(Math.floor(Math.random() * DATA.EXPRESSIONS.length)); // 容错：未知状态给随机表情
   stateMotion(name);
   setEffect(name);
-  if (!autoPaused && Math.random() < 0.12 && SKETCHES.length) showSketch(pick(SKETCHES));
+  if (!autoPaused && Math.random() < 0.10 && SKETCHES.length) showSketch(pick(SKETCHES));
   else showLine(name);
   // 庆祝：双脚连跳（烟花特效由 setEffect 负责）
   if (name === 'celebrate') playQuickAction('celebrate');
@@ -1284,7 +1165,7 @@ function changeState() {
     petSetState(s);
     if (Math.random() < 0.28) playQuickAction(pick(['bounce','peek','wave','squish','shake']));
     if (Math.random() < 0.14) applyColor(pick(GROKBOT_COLORS));
-    if (Math.random() < 0.10) startShapeShow();   // 变形秀彩蛋：圆→随机形状→圆（10% 概率，常驻球态）
+    if (Math.random() < 0.20) startShapeShow();   // 变形秀彩蛋：圆→随机形状→圆（20% 概率，常驻球态）
   } catch (e) { /* 单次异常不卡死轮询 */ }
   stateTimer = setTimeout(changeState, rand(7000, 13000));
 }
@@ -1396,10 +1277,8 @@ activeState = 'idle';
 showMood('Sonnet Bot 上线啦~');
 rafId = requestAnimationFrame(frame);
 // 尺寸按钮已移到右键菜单，悬停按钮取消
-// 启动自动轮询 + 自言自语
-cycleExpr();
-changeState();
-scheduleBlinkPet();
+// 启动自动轮询 + 自言自语（延迟 2s 让开场白先显示完，且首次跳小剧场）
+initTimer = setTimeout(() => { initTimer = null; cycleExpr(); changeState(); scheduleBlinkPet(); }, 2000);
 scheduleChatter();
 
 /* ===== 给菜单/外部调用的接口 ===== */
@@ -1427,7 +1306,7 @@ if (window.electronAPI && window.electronAPI.onMenuAction) {
       const v = action.slice(5);
       if (v === 'minus') applyScale(petScale * 2/3);
       else if (v === 'plus') applyScale(petScale * 3/2);
-      else applyScale(1);
+      else applyScale(2/3);
     }
     else if (action === 'autostart:on') showMood('开机自启 ✓');
     else if (action === 'autostart:off') showMood('关闭自启');
