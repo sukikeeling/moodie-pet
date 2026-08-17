@@ -2,6 +2,8 @@
 
 > 圆嘟嘟的小脸桌面宠物：双主题（🌈 彩色可爱 / ⚫ Sonnet 极简）· 贝塞尔弹簧 morph · 身体变形秀 · 39 状态自动轮询 · 3D 拖动转向 · 透明置顶 · 桌面穿透 · 开机自启。
 
+> 🧠 **项目来源说明**：本项目的动画引擎（表情 morph、身体弹簧、状态机节奏）基于社区逆向工程数据（smontlouis GrokBot gist、blobstudio 等开源项目）和自研渲染实现，目标是高度接近官方 Orb 角色动画质感，**非官方源码，不含官方资产**。代码本身 MIT 许可，可自由使用。
+
 ![Sonnet Bot](docs/preview.svg)
 
 > 🌐 **[在线试玩](https://sukikeeling.github.io/moodie-pet/)** · ⬇ **[下载 Windows 免安装版](https://github.com/sukikeeling/moodie-pet/releases)**
