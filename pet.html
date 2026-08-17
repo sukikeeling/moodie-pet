@@ -202,42 +202,124 @@
   #grok-blue-dot { fill: #2f86ed; opacity:0; pointer-events:none; transition: opacity .25s ease; }
   #grok-dot-l, #grok-dot-r { fill: var(--bot-color); opacity:0; pointer-events:none; transition: opacity .25s ease; }
 
-  /* 粒子（JS 生成 span） */
+  /* 粒子（JS 生成 span）——增强粒子绽放：加粗、鲜亮、双层发光光晕 */
   .fx-heart, .fx-z, .fx-spark, .fx-note, .fx-dot, .fx-confetti { position:absolute; }
   .fx-heart { color:#ff2d8b; font-size:18px; text-shadow:0 0 6px rgba(255,45,139,.6); animation:fx-float 1.6s ease-out forwards; }
   .fx-z { color:#6b5d7e; font-size:20px; font-weight:700; animation:fx-float 1.9s ease-out forwards; }
   .fx-note { color:#8656f6; font-size:16px; text-shadow:0 0 6px rgba(134,86,246,.6); animation:fx-float 1.6s ease-out forwards; }
   /* 视频同款音符：头顶生成，粉/黄上浮 + 左右摇摆（1.7s 节奏循环） */
-  .fx-note-swing { position:absolute; font-size:22px; line-height:1; animation:fx-note-swing 1.7s ease-out forwards; }
-  .fx-note-swing.c-pink { color:#ff69b4; text-shadow:0 0 10px rgba(255,105,180,.85), 0 0 20px rgba(255,105,180,.35); }
-  .fx-note-swing.c-yellow { color:#ffd84d; text-shadow:0 0 10px rgba(255,216,77,.85), 0 0 20px rgba(255,216,77,.35); }
+  .fx-note-swing { position:absolute; font-size:30px; line-height:1; animation:fx-note-swing 1.7s ease-out forwards; }
+  .fx-note-swing.c-pink { color:#ff69b4; text-shadow:0 0 16px rgba(255,105,180,.95), 0 0 30px rgba(255,105,180,.5); }
+  .fx-note-swing.c-yellow { color:#ffd84d; text-shadow:0 0 16px rgba(255,216,77,.95), 0 0 30px rgba(255,216,77,.5); }
   @keyframes fx-note-swing {
     0%   { transform:translate(0,0) rotate(-8deg) scale(.4); opacity:0; }
     12%  { transform:translate(-6px,-12px) rotate(-6deg) scale(.75); opacity:1; }
     38%  { transform:translate(9px,-34px) rotate(7deg) scale(1); }
-    62%  { transform:translate(-8px,-58px) rotate(-9deg) scale(1.04); }
-    85%  { transform:translate(6px,-82px) rotate(6deg) scale(1.08); opacity:.85; }
-    100% { transform:translate(-4px,-108px) rotate(-4deg) scale(1.12); opacity:0; }
+    62%  { transform:translate(-8px,-58px) rotate(-9deg) scale(1.08); }
+    85%  { transform:translate(6px,-82px) rotate(6deg) scale(1.12); opacity:.85; }
+    100% { transform:translate(-4px,-108px) rotate(-4deg) scale(1.18); opacity:0; }
   }
   .fx-spark { color:#ffd84d; font-size:14px; text-shadow:0 0 8px rgba(255,216,77,.8); animation:fx-twinkle 1.2s ease-out forwards; }
   /* 视频同款星星：四周放射状扩散 + 放大 + 淡出（金/白，中间点 JS 预计算 --dx1/--dx2） */
-  .fx-star-burst { position:absolute; font-size:20px; line-height:1; animation:fx-star-burst 1.15s ease-out forwards; }
-  .fx-star-burst.c-gold { color:#ffd84d; text-shadow:0 0 10px rgba(255,216,77,.9), 0 0 22px rgba(255,216,77,.4); }
-  .fx-star-burst.c-white { color:#ffffff; text-shadow:0 0 10px rgba(255,255,255,.9), 0 0 22px rgba(255,255,255,.4); }
+  .fx-star-burst { position:absolute; font-size:28px; line-height:1; animation:fx-star-burst 1.0s ease-out forwards; }
+  .fx-star-burst.c-gold { color:#ffd84d; text-shadow:0 0 14px rgba(255,216,77,.95), 0 0 28px rgba(255,216,77,.5); }
+  .fx-star-burst.c-white { color:#ffffff; text-shadow:0 0 14px rgba(255,255,255,.95), 0 0 28px rgba(255,255,255,.5); }
   @keyframes fx-star-burst {
     0%   { transform:translate(0,0) scale(.25) rotate(0deg); opacity:0; }
-    18%  { transform:translate(var(--dx1), var(--dy1)) scale(.6) rotate(28deg); opacity:1; }
-    55%  { transform:translate(var(--dx2), var(--dy2)) scale(1.05) rotate(58deg); opacity:.95; }
-    100% { transform:translate(var(--dx), var(--dy)) scale(1.4) rotate(92deg); opacity:0; }
+    15%  { transform:translate(var(--dx1), var(--dy1)) scale(.6) rotate(28deg); opacity:1; }
+    50%  { transform:translate(var(--dx2), var(--dy2)) scale(1.1) rotate(58deg); opacity:.95; }
+    100% { transform:translate(var(--dx), var(--dy)) scale(1.5) rotate(92deg); opacity:0; }
   }
-  /* 线条爆发：短彩色线段从球体表面向外甩出带弧线（视频同款） */
   .fx-dot { width:9px; height:9px; border-radius:50%; background:#4a3a5e; animation:fx-bob 1.2s ease-in-out forwards; }
   .fx-confetti { width:8px; height:12px; border-radius:2px; animation:fx-burst 1.5s ease-out forwards; }
-  .fx-fw { position:absolute; width:8px; height:8px; border-radius:50%; animation:fw-burst 1.1s ease-out forwards; }
-  @keyframes fw-burst { 0%{transform:translate(0,0) scale(1.5);opacity:1} 50%{opacity:1} 100%{transform:translate(var(--dx),var(--dy)) scale(0.2);opacity:0} }
-  /* 蜡笔触彩虹弧线：弯曲彩色渐变线条，粗细变化，多层交叉（z-index 在球前） */
-  .fx-crayon { position:absolute; left:0; top:0; width:228px; height:228px; pointer-events:none; z-index:5; }
-  .fx-crayon path { fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  
+  /* 粒子绽放（升级版：高饱和饱满大粒子 + 璀璨双层发光） */
+  .fx-fw {
+    position: absolute;
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    pointer-events: none;
+    box-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+    animation: fw-burst 1.15s cubic-bezier(0.18, 0.85, 0.32, 1) forwards;
+  }
+  @keyframes fw-burst {
+    0%   { transform: translate(0,0) scale(1.6); opacity: 1; filter: brightness(1.35); }
+    60%  { opacity: 1; filter: brightness(1.15); }
+    100% { transform: translate(var(--dx), var(--dy)) scale(0.35); opacity: 0; }
+  }
+  
+  /* ===== 动作专用特效样式（彩色压感蜡笔触流星 / 弧线 / 特殊形态） ===== */
+  #action-fx {
+    position: absolute; inset: 0;
+    pointer-events: none; overflow: visible; z-index: 5;
+  }
+  .crayon-meteor {
+    position: absolute;
+    border-radius: 999px;
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+  .crayon-streamer {
+    position: absolute;
+    border-radius: 999px;
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+  
+  /* 动作5：毛笔元素 */
+  .brush-holder {
+    position: absolute; left: 114px; top: 114px;
+    width: 0; height: 0;
+    pointer-events: none;
+    transform-origin: 0 0;
+  }
+  .brush-body {
+    position: absolute;
+    left: -12px; top: -140px;
+    width: 24px; height: 130px;
+    border-radius: 12px 12px 6px 6px;
+    background: linear-gradient(180deg, #2b1d0c 0%, #68431e 30%, #3e2612 85%, #d4af37 92%, #ffffff 96%, #222222 100%);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.38), inset 2px 0 4px rgba(255,255,255,0.25);
+  }
+  .brush-tip {
+    position: absolute;
+    left: -18px; top: -12px;
+    width: 36px; height: 46px;
+    border-radius: 50% 50% 60% 60% / 30% 30% 70% 70%;
+    background: radial-gradient(circle at 40% 60%, var(--bot-color), #b01a58);
+    box-shadow: 0 4px 16px rgba(255,45,139,0.5);
+    transform: rotate(180deg);
+  }
+
+  /* 动作6：感叹号竖柱与蓝球 */
+  .exclaim-bar {
+    position: absolute;
+    left: 98px; top: 42px;
+    width: 32px; height: 95px;
+    border-radius: 16px 16px 14px 14px;
+    background: var(--bot-color);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.28);
+    transform-origin: 50% 90%;
+  }
+  .blue-dot-pop {
+    position: absolute;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #79e2d0, #2f86ed 70%, #1752b0 100%);
+    box-shadow: 0 0 16px rgba(47,134,237,0.75), 0 4px 12px rgba(0,0,0,0.3);
+    pointer-events: none;
+  }
+  
+  /* 动作4：三横排小球 */
+  .tri-dot {
+    position: absolute;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    top: 101px;
+    pointer-events: none;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+    transition: transform .32s cubic-bezier(.34,1.5,.56,1), opacity .32s ease, filter .32s ease;
+  }
   .fx-rocket { position:absolute; width:4px; height:4px; border-radius:50%; animation:fw-rise .55s ease-out forwards; }
   @keyframes fw-rise { 0%{transform:translateY(0);opacity:1} 75%{opacity:1} 100%{transform:translateY(var(--rise,-160px));opacity:0} }
   .fx-tear { position:absolute; color:#5ec5ff; font-size:14px; text-shadow:0 0 5px rgba(94,197,255,.6); animation:fx-fall 1.6s ease-in forwards; }
@@ -258,6 +340,7 @@
   <div class="stage" id="viewer">
     <div class="mood-tag" id="mood-tag">待机</div>
     <div id="fx"><span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span></div>
+    <div id="action-fx"></div>
     <div class="bot3d" id="bot3d">
       <svg class="bot" id="bot" viewBox="-28 -28 285 285" role="img" aria-label="Sonnet Bot">
         <defs>
@@ -272,6 +355,35 @@
             <stop offset="72%" stop-color="#ffffff" stop-opacity="0"/>
             <stop offset="100%" stop-color="#ffffff" stop-opacity=".16"/>
           </linearGradient>
+          <!-- 动作专用：彩色蜡笔渐变与光晕滤镜 -->
+          <linearGradient id="rainbow-c1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ff5d9e"/>
+            <stop offset="40%" stop-color="#ffd84d"/>
+            <stop offset="80%" stop-color="#08c77a"/>
+            <stop offset="100%" stop-color="#2f86ed"/>
+          </linearGradient>
+          <linearGradient id="rainbow-c2" x1="100%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#8656f6"/>
+            <stop offset="50%" stop-color="#2f86ed"/>
+            <stop offset="100%" stop-color="#79e2d0"/>
+          </linearGradient>
+          <linearGradient id="rainbow-c3" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#ff2d8b"/>
+            <stop offset="50%" stop-color="#ff9800"/>
+            <stop offset="100%" stop-color="#ffd84d"/>
+          </linearGradient>
+          <linearGradient id="rainbow-cyan-green" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#79e2d0"/>
+            <stop offset="50%" stop-color="#08c77a"/>
+            <stop offset="100%" stop-color="#ffd84d"/>
+          </linearGradient>
+          <filter id="crayon-glow" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
         </defs>
         <ellipse class="orbit" cx="114" cy="115" rx="107" ry="38"/>
         <g id="spring-group">
@@ -741,6 +853,8 @@ function pausePet() {
   stopCurveFx();
   stopShapeShow();                           // 暂停时中断变形秀
   stopGrokShow();                            // 暂停时中断 Grok 状态机
+  clearActionFx();
+  isActionPlaying = false;
   fxLayer.className = '';                       // 关掉特效层（停止合成器活动）
   showMood('zzZ…去歇会儿');
 }
@@ -946,7 +1060,7 @@ const MATH_CURVES = {
     }, a: 106, b: 102,   // 上下/左右振幅 > 球半径，波形环绕球外侧
   },
 };
-const FX_CURVE = { thinking: 'circle', loading: 'rose', working: 'lissajous' };
+const FX_CURVE = {};
 let curveFx = null; // { kind, wrap, path, pts[], start, raf, cfg }
 function curveDetailScale(time, cfg, phase) {
   const pp = ((time + phase * cfg.pulseDurationMs) % cfg.pulseDurationMs) / cfg.pulseDurationMs;
@@ -1018,32 +1132,588 @@ function stopCurveFx() {
   curveFx = null;
 }
 
-// 蜡笔触彩虹弧线：弯曲彩色渐变线条，粗细压感变化，甩动感（核心新特效）
-function spawnCrayonArc(opts) {
-  const { sx, sy, cx, cy, ex, ey, colors, widths, dur, delay } = opts;
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('class', 'fx-crayon');
-  svg.setAttribute('viewBox', '0 0 228 228');
-  const d = `M${sx} ${sy} Q${cx} ${cy} ${ex} ${ey}`;
-  colors.forEach((col, i) => {
-    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    p.setAttribute('d', d); p.setAttribute('stroke', col);
-    p.setAttribute('stroke-width', String(widths[i] || 3));
-    svg.appendChild(p);
-  });
-  fxLayer.appendChild(svg);
-  const len = svg.querySelector('path').getTotalLength() || 200;
-  svg.querySelectorAll('path').forEach(p => {
-    p.style.strokeDasharray = String(len);
-    p.style.strokeDashoffset = String(len);
-    p.animate([
+/* ============================================================
+   七大连贯动作（人工盯帧复刻版）
+   压感彩色蜡笔流星 / 60° 环绕弧线 / 粒子汇聚 / 三球跳动 / 毛笔挥毫 / 感叹号蓝球 / 弹跳轮询
+   ============================================================ */
+const actionLayer = document.querySelector('#action-fx');
+let isActionPlaying = false;
+let actionTimers = [];
+
+function clearActionFx() {
+  actionTimers.forEach(t => clearTimeout(t));
+  actionTimers = [];
+  if (actionLayer) actionLayer.innerHTML = '';
+}
+
+function safeActionTimeout(fn, delay) {
+  const t = setTimeout(fn, delay);
+  actionTimers.push(t);
+  return t;
+}
+
+// 辅助：生成单条压感蜡笔彩虹流星/弧线
+function spawnCrayonMeteor({ x1, y1, x2, y2, cx, cy, colors, width = 18, duration = 850, delay = 0, onFinish }) {
+  safeActionTimeout(() => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 230 230');
+    svg.style.cssText = 'position:absolute;left:0;top:0;width:230px;height:230px;pointer-events:none;z-index:6;overflow:visible;';
+    
+    const gradId = 'meteor-grad-' + Math.random().toString(36).substr(2, 6);
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    const grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+    grad.setAttribute('id', gradId);
+    grad.setAttribute('x1', '0%'); grad.setAttribute('y1', '0%');
+    grad.setAttribute('x2', '100%'); grad.setAttribute('y2', '100%');
+    
+    colors.forEach((c, idx) => {
+      const stop = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+      stop.setAttribute('offset', (idx / (colors.length - 1) * 100).toFixed(0) + '%');
+      stop.setAttribute('stop-color', c);
+      grad.appendChild(stop);
+    });
+    defs.appendChild(grad);
+    svg.appendChild(defs);
+    
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const d = cx !== undefined ? `M${x1} ${y1} Q${cx} ${cy} ${x2} ${y2}` : `M${x1} ${y1} L${x2} ${y2}`;
+    path.setAttribute('d', d);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', `url(#${gradId})`);
+    path.setAttribute('stroke-width', width);
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('filter', 'url(#crayon-glow)');
+    svg.appendChild(path);
+    actionLayer.appendChild(svg);
+    
+    const len = path.getTotalLength() || 120;
+    path.style.strokeDasharray = `${len} ${len}`;
+    path.style.strokeDashoffset = `${len}`;
+    
+    path.animate([
       { strokeDashoffset: len, opacity: 0 },
-      { strokeDashoffset: len * 0.4, opacity: 0.85, offset: 0.25 },
-      { strokeDashoffset: 0, opacity: 0.85, offset: 0.55 },
-      { strokeDashoffset: -len * 0.15, opacity: 0 }
-    ], { duration: dur || 1200, delay: delay || 0, easing: 'ease-out', fill: 'forwards' });
+      { strokeDashoffset: len * 0.35, opacity: 0.95, offset: 0.22 },
+      { strokeDashoffset: 0, opacity: 0.9, offset: 0.65 },
+      { strokeDashoffset: -len * 0.6, opacity: 0, offset: 1 }
+    ], { duration: duration, easing: 'cubic-bezier(0.25, 0.9, 0.35, 1)', fill: 'forwards' }).onfinish = () => {
+      svg.remove();
+      if (onFinish) onFinish();
+    };
+  }, delay);
+}
+
+// 辅助：生成 60° 倾角彩虹环绕弧线束
+function spawnRainbowArcWrap({ cx = 114, cy = 114, rx = 72, ry = 34, tiltDeg = 60, colors, duration = 1800, count = 5, onFinish }) {
+  const container = document.createElement('div');
+  container.style.cssText = `position:absolute;left:${cx}px;top:${cy}px;width:0;height:0;transform:rotate(${tiltDeg}deg);pointer-events:none;z-index:6;`;
+  actionLayer.appendChild(container);
+
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    const w = rx * 2 + i * 8;
+    const h = ry * 2 + i * 6;
+    const col = colors[i % colors.length];
+    const thick = 14 + (i % 3) * 3;
+    el.style.cssText = `
+      position: absolute;
+      left: ${-w/2}px; top: ${-h/2}px;
+      width: ${w}px; height: ${h}px;
+      border-radius: 50%;
+      border: ${thick}px solid transparent;
+      border-top-color: ${col[0]};
+      border-right-color: ${col[1] || col[0]};
+      box-shadow: 0 0 16px ${col[0]}, 0 0 28px ${col[1] || col[0]};
+      opacity: 0;
+      pointer-events: none;
+      transform-origin: center center;
+    `;
+    container.appendChild(el);
+
+    safeActionTimeout(() => {
+      el.animate([
+        { transform: 'rotate(0deg) scale(0.35)', opacity: 0 },
+        { transform: 'rotate(120deg) scale(0.9)', opacity: 0.95, offset: 0.25 },
+        { transform: 'rotate(240deg) scale(1.05)', opacity: 0.9, offset: 0.7 },
+        { transform: 'rotate(360deg) scale(0.75)', opacity: 0, offset: 1 }
+      ], { duration: duration + i * 120, easing: 'cubic-bezier(0.3, 0.8, 0.4, 1)', fill: 'forwards' }).onfinish = () => {
+        el.remove();
+      };
+    }, i * 90);
+  }
+
+  safeActionTimeout(() => {
+    container.remove();
+    if (onFinish) onFinish();
+  }, duration + count * 120 + 100);
+}
+
+// 连贯动作1（人工盯帧版）：圆三角翻滚 + 右上角彩虹短弧流星雨 + 底部与三角三束彩虹包裹 2s + 变回圆球
+function doAction1() {
+  if (isActionPlaying) return;
+  isActionPlaying = true;
+  clearActionFx();
+  
+  // 1. 身体变成圆角三角
+  startShapeMorph('triangle');
+  
+  // 2. 右上角甩出一小束彩虹短弧线（粉、黄、绿、青、紫交错流星划到左下角）
+  const meteorPalettes = [
+    ['#ff5d9e', '#ffd84d'],
+    ['#ffd84d', '#08c77a'],
+    ['#08c77a', '#79e2d0'],
+    ['#2f86ed', '#8656f6'],
+    ['#ff2d8b', '#ff9800', '#ffd84d']
+  ];
+  for (let i = 0; i < 5; i++) {
+    spawnCrayonMeteor({
+      x1: 170 + i * 6, y1: 34 + i * 8,
+      x2: 45 + i * 8, y2: 185 + i * 6,
+      cx: 135 - i * 10, cy: 95 + i * 8,
+      colors: meteorPalettes[i % meteorPalettes.length],
+      width: 14 + (i % 3) * 4,
+      duration: 750 + i * 60,
+      delay: i * 90
+    });
+  }
+
+  // 3. 三角形开始旋转翻滚（持续约 2s），底部与三角三个角甩出 3 束彩虹线条包裹
+  safeActionTimeout(() => {
+    let rollStart = performance.now();
+    const rollDur = 2000;
+    const initialRot = bodySprings.rotate.x;
+    
+    function rollTick(now) {
+      const p = Math.min((now - rollStart) / rollDur, 1);
+      const ease = Math.sin(p * Math.PI / 2);
+      bodySprings.rotate.target = initialRot + ease * 720;
+      bodySprings.y.target = Math.sin(p * Math.PI * 4) * 6;
+      if (p < 1) requestAnimationFrame(rollTick);
+    }
+    requestAnimationFrame(rollTick);
+
+    // 三束彩虹包裹弧线
+    const rainbowBundles = [
+      [['#ff5d9e', '#ffd84d'], ['#ffd84d', '#08c77a']],
+      [['#08c77a', '#79e2d0'], ['#2f86ed', '#8656f6']],
+      [['#8656f6', '#ff2d8b'], ['#ff9800', '#ffd84d']]
+    ];
+    rainbowBundles.forEach((bundle, idx) => {
+      spawnRainbowArcWrap({
+        cx: 114, cy: 114,
+        rx: 76 + idx * 8, ry: 40 + idx * 6,
+        tiltDeg: 30 + idx * 55,
+        colors: bundle,
+        duration: 1750,
+        count: 3
+      });
+    });
+  }, 450);
+
+  // 4. 翻滚 2s 后在彩虹环绕中丝滑变回圆球，弧线淡出
+  safeActionTimeout(() => {
+    startShapeMorph('blob');
+    bodySprings.rotate.target = 0;
+    bodySprings.y.target = 0;
+    spawnBurst(16);
+  }, 2350);
+
+  safeActionTimeout(() => {
+    isActionPlaying = false;
+  }, 2900);
+}
+
+// 连贯动作2（人工盯帧版）：圆球缩小至小球 + 彩色小球粒子由淡到深加速汇聚融合 + 变回圆球
+function doAction2() {
+  if (isActionPlaying) return;
+  isActionPlaying = true;
+  clearActionFx();
+
+  // 1. 圆球缩小至小球
+  tinySpring.target = 0.36;
+
+  // 2. 旁边持续生成由淡到深的小球粒子汇聚融合到中心小球
+  const colors = ['#ff5d9e', '#2f86ed', '#08c77a', '#ff9800', '#8656f6', '#ffd84d', '#79e2d0'];
+  let count = 0;
+  const convergeInterval = setInterval(() => {
+    if (count++ > 22 || autoPaused) {
+      clearInterval(convergeInterval);
+      return;
+    }
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 65 + Math.random() * 55;
+    const startX = 114 + Math.cos(angle) * dist;
+    const startY = 114 + Math.sin(angle) * dist;
+    const col = colors[Math.floor(Math.random() * colors.length)];
+    const size = 9 + Math.random() * 8;
+
+    const p = document.createElement('div');
+    p.style.cssText = `
+      position: absolute;
+      left: ${startX - size/2}px; top: ${startY - size/2}px;
+      width: ${size}px; height: ${size}px;
+      border-radius: 50%;
+      background: ${col};
+      box-shadow: 0 0 12px ${col}, 0 0 20px ${col};
+      opacity: 0.25;
+      pointer-events: none;
+      z-index: 6;
+    `;
+    actionLayer.appendChild(p);
+
+    p.animate([
+      { transform: 'translate(0, 0) scale(0.6)', opacity: 0.25 },
+      { transform: `translate(${(114 - startX) * 0.45}px, ${(114 - startY) * 0.45}px) scale(1.15)`, opacity: 0.95, offset: 0.45 },
+      { transform: `translate(${114 - startX}px, ${114 - startY}px) scale(0.3)`, opacity: 1, offset: 0.9 },
+      { transform: `translate(${114 - startX}px, ${114 - startY}px) scale(0)`, opacity: 0 }
+    ], { duration: 650, easing: 'cubic-bezier(0.4, 0.0, 0.2, 1)', fill: 'forwards' }).onfinish = () => {
+      p.remove();
+      eyePulse = 0.45; // 融合吸收脉冲
+    };
+  }, 75);
+
+  // 3. 汇聚完成，小球弹跳回弹变回原圆球
+  safeActionTimeout(() => {
+    clearInterval(convergeInterval);
+    tinySpring.target = 1.15;
+    safeActionTimeout(() => {
+      tinySpring.target = 1.0;
+      startShapeMorph('blob');
+      spawnBurst(14);
+    }, 180);
+  }, 1900);
+
+  safeActionTimeout(() => {
+    isActionPlaying = false;
+  }, 2500);
+}
+
+// 连贯动作3（人工盯帧版）：圆球缩成小球 + 60° 倾角彩虹弧线由短变长环绕一周 + 小球增大复原
+function doAction3() {
+  if (isActionPlaying) return;
+  isActionPlaying = true;
+  clearActionFx();
+
+  // 1. 圆球缩成小球
+  tinySpring.target = 0.42;
+
+  // 2. 自小球圆周甩出 60° 倾角彩虹弧线（粉紫青绿），由短变长绕身环形旋转一周
+  const rainbowRings = [
+    ['#ff5d9e', '#8656f6'],
+    ['#8656f6', '#2f86ed'],
+    ['#2f86ed', '#79e2d0'],
+    ['#79e2d0', '#08c77a'],
+    ['#08c77a', '#ffd84d']
+  ];
+
+  safeActionTimeout(() => {
+    spawnRainbowArcWrap({
+      cx: 114, cy: 114,
+      rx: 68, ry: 30,
+      tiltDeg: 60,
+      colors: rainbowRings,
+      duration: 1650,
+      count: 5
+    });
+  }, 250);
+
+  // 3. 彩虹弧线淡出消失，小球同步膨胀回弹变回原大小
+  safeActionTimeout(() => {
+    tinySpring.target = 1.0;
+    startShapeMorph('blob');
+    spawnBurst(12);
+  }, 1750);
+
+  safeActionTimeout(() => {
+    isActionPlaying = false;
+  }, 2300);
+}
+
+// 连贯动作4（人工盯帧版）：圆球缩小成三个横排小球 + 依次跳动呼吸加深/淡化 + 聚拢融合变回圆球
+function doAction4() {
+  if (isActionPlaying) return;
+  isActionPlaying = true;
+  clearActionFx();
+
+  // 1. 主圆球缩小隐藏
+  tinySpring.target = 0;
+
+  // 2. 中央生成 3 个横排小球
+  const dotsContainer = document.createElement('div');
+  dotsContainer.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:6;';
+  actionLayer.appendChild(dotsContainer);
+
+  const dotPositions = [64, 114, 164];
+  const dotColors = ['#ff5d9e', '#08c77a', '#2f86ed'];
+  const dotEls = [];
+
+  dotPositions.forEach((posX, i) => {
+    const d = document.createElement('div');
+    d.className = 'tri-dot';
+    d.style.left = (posX - 13) + 'px';
+    d.style.background = dotColors[i];
+    d.style.boxShadow = `0 0 16px ${dotColors[i]}, 0 4px 10px rgba(0,0,0,0.3)`;
+    d.style.transform = 'scale(0)';
+    d.style.opacity = '0';
+    dotsContainer.appendChild(d);
+    dotEls.push(d);
+
+    safeActionTimeout(() => {
+      d.style.transform = 'scale(1)';
+      d.style.opacity = '1';
+    }, 50 + i * 60);
   });
-  setTimeout(() => svg.remove(), (dur || 1200) + (delay || 0) + 300);
+
+  // 3. 依次跳动呼吸：跳动小球加深放大，未跳小球淡化
+  [0, 1, 2].forEach(activeIdx => {
+    safeActionTimeout(() => {
+      dotEls.forEach((el, idx) => {
+        if (idx === activeIdx) {
+          el.style.transform = 'translateY(-22px) scale(1.28)';
+          el.style.opacity = '1';
+          el.style.filter = 'brightness(1.35) drop-shadow(0 0 12px currentColor)';
+        } else {
+          el.style.transform = 'translateY(0) scale(0.9)';
+          el.style.opacity = '0.35';
+          el.style.filter = 'brightness(0.85)';
+        }
+      });
+      // 跳完回落
+      safeActionTimeout(() => {
+        dotEls[activeIdx].style.transform = 'translateY(0) scale(1)';
+      }, 260);
+    }, 380 + activeIdx * 460);
+  });
+
+  // 4. 三小球向中心 (114, 114) 快速加速聚拢融合
+  safeActionTimeout(() => {
+    dotEls.forEach((el, idx) => {
+      el.style.transition = 'transform .28s cubic-bezier(0.4, 0, 0.2, 1), opacity .28s ease';
+      el.style.transform = `translate(${114 - dotPositions[idx]}px, 0) scale(0.35)`;
+      el.style.opacity = '0';
+    });
+  }, 1900);
+
+  // 5. 融合完成，主圆球弹射复原
+  safeActionTimeout(() => {
+    dotsContainer.remove();
+    tinySpring.target = 1.0;
+    startShapeMorph('blob');
+    spawnBurst(16);
+  }, 2200);
+
+  safeActionTimeout(() => {
+    isActionPlaying = false;
+  }, 2750);
+}
+
+// 连贯动作5（人工盯帧版）：水滴笔尖 + 笔杆组合毛笔 + 倾斜15°向右平移点缀跳动 + 右侧融合变回圆球
+function doAction5() {
+  if (isActionPlaying) return;
+  isActionPlaying = true;
+  clearActionFx();
+
+  // 1. 主球缩小隐藏
+  tinySpring.target = 0;
+
+  // 2. 浮现毛笔组合体
+  const brushWrap = document.createElement('div');
+  brushWrap.className = 'brush-holder';
+  brushWrap.innerHTML = `
+    <div class="brush-body"></div>
+    <div class="brush-tip"></div>
+  `;
+  actionLayer.appendChild(brushWrap);
+
+  // 3. 毛笔倾斜 15°，从左向右平移，水滴笔尖上下轻快跳动点缀
+  brushWrap.style.transform = 'translate(-42px, 12px) rotate(15deg) scale(0.2)';
+  brushWrap.style.opacity = '0';
+  brushWrap.style.transition = 'transform .45s cubic-bezier(.34,1.4,.56,1), opacity .35s ease';
+
+  safeActionTimeout(() => {
+    brushWrap.style.opacity = '1';
+    brushWrap.style.transform = 'translate(-36px, 0px) rotate(15deg) scale(1)';
+  }, 80);
+
+  // 4. 向右平移动画 + 笔尖跳动点缀
+  safeActionTimeout(() => {
+    let startT = performance.now();
+    const moveDur = 1650;
+    function moveTick(now) {
+      const p = Math.min((now - startT) / moveDur, 1);
+      const ease = p * (2 - p); // easeOutQuad
+      const curX = -36 + ease * 82; // 从 -36px 平移到 +46px
+      const bobY = Math.sin(p * Math.PI * 6) * 9; // 上下轻快跳动 3 个波峰
+      brushWrap.style.transform = `translate(${curX}px, ${bobY}px) rotate(15deg) scale(1)`;
+
+      // 在跳动波峰洒落小墨点/彩色粒子
+      if (Math.random() < 0.16) {
+        const dot = document.createElement('div');
+        dot.className = 'fx-fw';
+        dot.style.left = (114 + curX) + 'px';
+        dot.style.top = (114 + bobY + 16) + 'px';
+        dot.style.background = '#ff5d9e';
+        dot.style.setProperty('--dx', (Math.random() * 24 - 12) + 'px');
+        dot.style.setProperty('--dy', (10 + Math.random() * 18) + 'px');
+        actionLayer.appendChild(dot);
+        setTimeout(() => dot.remove(), 700);
+      }
+
+      if (p < 1) requestAnimationFrame(moveTick);
+    }
+    requestAnimationFrame(moveTick);
+  }, 480);
+
+  // 5. 退到右侧后水滴变大与笔杆融合，平滑变回圆球
+  safeActionTimeout(() => {
+    brushWrap.style.transition = 'transform .4s ease, opacity .4s ease';
+    brushWrap.style.transform = 'translate(0px, 0px) rotate(0deg) scale(1.4)';
+    brushWrap.style.opacity = '0';
+  }, 2200);
+
+  safeActionTimeout(() => {
+    brushWrap.remove();
+    tinySpring.target = 1.0;
+    startShapeMorph('blob');
+    spawnBurst(16);
+  }, 2550);
+
+  safeActionTimeout(() => {
+    isActionPlaying = false;
+  }, 3100);
+}
+
+// 连贯动作6（人工盯帧版）：右上角出缺口弹出蓝球 + 缩小成感叹号下方圆球并组成感叹号 + 叮铃晃动 + 融回归位
+function doAction6() {
+  if (isActionPlaying) return;
+  isActionPlaying = true;
+  clearActionFx();
+
+  // 1. 右上角弹出蓝色小球
+  const blueDot = document.createElement('div');
+  blueDot.className = 'blue-dot-pop';
+  blueDot.style.left = '135px'; blueDot.style.top = '85px';
+  blueDot.style.transform = 'scale(0)';
+  blueDot.style.opacity = '0';
+  blueDot.style.transition = 'transform .45s cubic-bezier(.34,1.6,.56,1), opacity .3s ease';
+  actionLayer.appendChild(blueDot);
+
+  safeActionTimeout(() => {
+    blueDot.style.transform = 'translate(45px, -45px) scale(1.1)';
+    blueDot.style.opacity = '1';
+  }, 100);
+
+  // 2. 主体圆球缩小成为感叹号下方小球，上方长条感叹号柱体落下
+  safeActionTimeout(() => {
+    tinySpring.target = 0.32;
+    bodySprings.y.target = 68; // 移至感叹号底部小圆点位置
+  }, 300);
+
+  const exclaimBar = document.createElement('div');
+  exclaimBar.className = 'exclaim-bar';
+  exclaimBar.style.transform = 'translateY(-60px) scale(0.3)';
+  exclaimBar.style.opacity = '0';
+  exclaimBar.style.transition = 'transform .45s cubic-bezier(.34,1.45,.56,1), opacity .3s ease';
+  actionLayer.appendChild(exclaimBar);
+
+  safeActionTimeout(() => {
+    exclaimBar.style.transform = 'translateY(0) scale(1)';
+    exclaimBar.style.opacity = '1';
+  }, 420);
+
+  // 3. 感叹号“叮铃”一下左右晃动两下
+  safeActionTimeout(() => {
+    exclaimBar.animate([
+      { transform: 'rotate(0deg)' },
+      { transform: 'rotate(-14deg)', offset: 0.25 },
+      { transform: 'rotate(12deg)', offset: 0.55 },
+      { transform: 'rotate(-6deg)', offset: 0.8 },
+      { transform: 'rotate(0deg)', offset: 1 }
+    ], { duration: 650, easing: 'ease-in-out' });
+
+    blueDot.animate([
+      { transform: 'translate(45px, -45px) rotate(0deg)' },
+      { transform: 'translate(40px, -52px) rotate(-15deg)', offset: 0.3 },
+      { transform: 'translate(48px, -40px) rotate(15deg)', offset: 0.65 },
+      { transform: 'translate(45px, -45px) rotate(0deg)', offset: 1 }
+    ], { duration: 650, easing: 'ease-in-out' });
+  }, 950);
+
+  // 4. 随后各部分向中心合体融回圆球
+  safeActionTimeout(() => {
+    exclaimBar.style.transform = 'scale(0)';
+    exclaimBar.style.opacity = '0';
+    blueDot.style.transform = 'translate(0, 0) scale(0)';
+    blueDot.style.opacity = '0';
+    bodySprings.y.target = 0;
+    tinySpring.target = 1.0;
+    startShapeMorph('blob');
+    spawnBurst(16);
+  }, 1850);
+
+  safeActionTimeout(() => {
+    exclaimBar.remove();
+    blueDot.remove();
+    isActionPlaying = false;
+  }, 2400);
+}
+
+// 连贯动作7（人工盯帧版）：圆球缩小至小球 + 原地弹跳两下 + 变回圆球 + 连续轮询形状 + 回归圆球
+function doAction7() {
+  if (isActionPlaying) return;
+  isActionPlaying = true;
+  clearActionFx();
+
+  // 1. 缩小至小球
+  tinySpring.target = 0.38;
+
+  // 2. 原地快速轻巧弹跳两下（带落地挤压）
+  safeActionTimeout(() => {
+    let bounceStart = performance.now();
+    const bounceDur = 900;
+    function bounceTick(now) {
+      const p = Math.min((now - bounceStart) / bounceDur, 1);
+      // 两次弹跳正弦波
+      const jumpY = -Math.abs(Math.sin(p * Math.PI * 2)) * 32 * (1 - p * 0.3);
+      bodySprings.y.target = jumpY;
+      if (p < 1) requestAnimationFrame(bounceTick);
+      else bodySprings.y.target = 0;
+    }
+    requestAnimationFrame(bounceTick);
+  }, 280);
+
+  // 3. 弹跳完成，小球放大回弹复原
+  safeActionTimeout(() => {
+    tinySpring.target = 1.0;
+    startShapeMorph('blob');
+    spawnBurst(12);
+  }, 1250);
+
+  // 4. 连续轮询形状：drop -> egg -> squircle -> capsule -> triangle -> hex -> blob
+  const morphSequence = ['drop', 'egg', 'squircle', 'capsule', 'triangle', 'hex', 'blob'];
+  morphSequence.forEach((shapeId, i) => {
+    safeActionTimeout(() => {
+      startShapeMorph(shapeId);
+      spawnFxParticle('thinking');
+    }, 1600 + i * 420);
+  });
+
+  safeActionTimeout(() => {
+    startShapeMorph('blob');
+    isActionPlaying = false;
+  }, 1600 + morphSequence.length * 420 + 200);
+}
+
+// 动画导演：独立运行动作序列，不与状态强绑定
+const ACTIONS = [doAction1, doAction2, doAction3, doAction4, doAction5, doAction6, doAction7];
+window.playAction = function(num) {
+  if (num >= 1 && num <= 7) {
+    ACTIONS[num - 1]();
+  }
+};
+
+function scheduleAction() {
+  if (autoPaused || theme === 'grok' || !ACTIONS.length || isActionPlaying) return;
+  if (Math.random() < 0.14) pick(ACTIONS)();
 }
 
 function setEffect(state) {
@@ -1084,28 +1754,6 @@ function setEffect(state) {
   if (FX_FIREWORK[state]) {
     spawnFirework();
     fxFwTimer = setInterval(() => { if (!autoPaused) spawnFirework(); }, FX_FIREWORK[state]);
-  }
-  // 蜡笔触彩虹弧线：挂到高频状态（thinking/excited/orbit），大幅加粗加亮
-  if (state === 'thinking' || state === 'excited' || state === 'orbit') {
-    // 动作1（excited）：圆→三角→圆 + 彩虹弧线从右上角甩出 + 环绕 + 粒子
-    if (state === 'excited') {
-      startShapeMorph('squircle');  // 圆角方（接近圆角三角）
-      setTimeout(() => { startShapeMorph('blob'); }, 3000);
-    }
-    const bigArc = (sx, sy, cx, cy, ex, ey, cols, ws, del, dur) => setTimeout(() => spawnCrayonArc({
-      sx, sy, cx, cy, ex, ey, colors: cols, widths: ws, dur: dur || 2000, delay: 0
-    }), del || 0);
-    // 第1波：从右上角(160,40)甩出3条彩虹短弧线，加粗到20-30px
-    bigArc(160, 40, 180, 80, 80, 170, ['#ff5d9e','#ff9800','#ffd84d'], [28,18,10], 0);
-    bigArc(160, 40, 100, 30, 50, 140, ['#08c77a','#2f86ed','#8656f6'], [24,15,8], 350);
-    bigArc(160, 40, 190, 130, 30, 170, ['#79e2d0','#ff5d9e','#8656f6'], [20,12,6], 700);
-    // 第2波：弧线环绕（从三角三个角的位置）
-    bigArc(30, 30, 60, 20, 114, 190, ['#ffd84d','#08c77a','#2f86ed'], [18,12,7], 1400, 1800);
-    bigArc(200, 30, 190, 100, 114, 190, ['#ff5d9e','#8656f6','#ff9800'], [18,12,7], 1500, 1800);
-    bigArc(114, 190, 50, 170, 114, 30, ['#79e2d0','#ffd84d','#ff5d9e'], [16,10,5], 1600, 1800);
-    // 粒子爆发
-    spawnBurst(10);
-    setTimeout(() => { if (!autoPaused) spawnBurst(12); }, 1000);
   }
 }
 
@@ -1166,6 +1814,7 @@ function changeState() {
     if (Math.random() < 0.28) playQuickAction(pick(['bounce','peek','wave','squish','shake']));
     if (Math.random() < 0.14) applyColor(pick(GROKBOT_COLORS));
     if (Math.random() < 0.20) startShapeShow();   // 变形秀彩蛋：圆→随机形状→圆（20% 概率，常驻球态）
+    scheduleAction();                              // 动画导演：10% 概率独立触发动作序列
   } catch (e) { /* 单次异常不卡死轮询 */ }
   stateTimer = setTimeout(changeState, rand(7000, 13000));
 }
