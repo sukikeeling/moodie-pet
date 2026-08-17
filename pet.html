@@ -181,6 +181,11 @@
   #fx .fx-dots i:nth-child(3) { animation-delay:.32s; }
   @keyframes fx-dot-bounce { 0%,100%{transform:translateY(0);opacity:.35} 40%{transform:translateY(-13px);opacity:1} }
 
+  /* 数学曲线粒子尾迹（math-curve-loaders 灵感）：彩色粒子沿参数曲线游走 + 渐隐尾迹 + 呼吸 + 缓旋 */
+  #fx.fx-curve { z-index: 3; }   /* 曲线层放身体前面（粒子轨迹清晰可见） */
+  #fx.fx-curve .curve-wrap { position:absolute; left:0; top:0; width:228px; height:228px; pointer-events:none; }
+  #fx.fx-curve .curve-wrap circle { will-change: cx,cy,r; }
+
   /* Grok 主题黑球光泽高光（body 上叠加渐变，theme=grok 时显示） */
   #body-shine { opacity: 0; pointer-events: none; fill: url(#grok-shine); transition: opacity .5s ease; }
   body.grok-theme #body-shine { opacity: 1; }
@@ -202,7 +207,29 @@
   .fx-heart { color:#ff2d8b; font-size:18px; text-shadow:0 0 6px rgba(255,45,139,.6); animation:fx-float 1.6s ease-out forwards; }
   .fx-z { color:#6b5d7e; font-size:20px; font-weight:700; animation:fx-float 1.9s ease-out forwards; }
   .fx-note { color:#8656f6; font-size:16px; text-shadow:0 0 6px rgba(134,86,246,.6); animation:fx-float 1.6s ease-out forwards; }
+  /* 视频同款音符：头顶生成，粉/黄上浮 + 左右摇摆（1.7s 节奏循环） */
+  .fx-note-swing { position:absolute; font-size:22px; line-height:1; animation:fx-note-swing 1.7s ease-out forwards; }
+  .fx-note-swing.c-pink { color:#ff69b4; text-shadow:0 0 10px rgba(255,105,180,.85), 0 0 20px rgba(255,105,180,.35); }
+  .fx-note-swing.c-yellow { color:#ffd84d; text-shadow:0 0 10px rgba(255,216,77,.85), 0 0 20px rgba(255,216,77,.35); }
+  @keyframes fx-note-swing {
+    0%   { transform:translate(0,0) rotate(-8deg) scale(.4); opacity:0; }
+    12%  { transform:translate(-6px,-12px) rotate(-6deg) scale(.75); opacity:1; }
+    38%  { transform:translate(9px,-34px) rotate(7deg) scale(1); }
+    62%  { transform:translate(-8px,-58px) rotate(-9deg) scale(1.04); }
+    85%  { transform:translate(6px,-82px) rotate(6deg) scale(1.08); opacity:.85; }
+    100% { transform:translate(-4px,-108px) rotate(-4deg) scale(1.12); opacity:0; }
+  }
   .fx-spark { color:#ffd84d; font-size:14px; text-shadow:0 0 8px rgba(255,216,77,.8); animation:fx-twinkle 1.2s ease-out forwards; }
+  /* 视频同款星星：四周放射状扩散 + 放大 + 淡出（金/白，中间点 JS 预计算 --dx1/--dx2） */
+  .fx-star-burst { position:absolute; font-size:20px; line-height:1; animation:fx-star-burst 1.15s ease-out forwards; }
+  .fx-star-burst.c-gold { color:#ffd84d; text-shadow:0 0 10px rgba(255,216,77,.9), 0 0 22px rgba(255,216,77,.4); }
+  .fx-star-burst.c-white { color:#ffffff; text-shadow:0 0 10px rgba(255,255,255,.9), 0 0 22px rgba(255,255,255,.4); }
+  @keyframes fx-star-burst {
+    0%   { transform:translate(0,0) scale(.25) rotate(0deg); opacity:0; }
+    18%  { transform:translate(var(--dx1), var(--dy1)) scale(.6) rotate(28deg); opacity:1; }
+    55%  { transform:translate(var(--dx2), var(--dy2)) scale(1.05) rotate(58deg); opacity:.95; }
+    100% { transform:translate(var(--dx), var(--dy)) scale(1.4) rotate(92deg); opacity:0; }
+  }
   .fx-dot { width:9px; height:9px; border-radius:50%; background:#4a3a5e; animation:fx-bob 1.2s ease-in-out forwards; }
   .fx-confetti { width:8px; height:12px; border-radius:2px; animation:fx-burst 1.5s ease-out forwards; }
   .fx-fw { position:absolute; width:5px; height:5px; border-radius:50%; animation:fw-burst .95s ease-out forwards; }
@@ -328,6 +355,18 @@ const STATE_LINES = {
   bouncing:['蹦蹦蹦！','弹起来～','嗨起来！','跳跳跳'],
   'powering-down':['要关机啦','下次见～','下线咯','晚安！'],
 };
+
+// 趣味梗小剧场：连贯多句顺序弹出（句间隔 ~1.2s，替代单句台词）
+const SKETCHES = [
+  ['你是宗介吗？', '我是波妞~', '波妞喜欢宗介！'],
+];
+let sketchTimer = null;
+function showSketch(lines) {
+  clearTimeout(sketchTimer);
+  lines.forEach((l, i) => {
+    sketchTimer = setTimeout(() => showMood(l), i * 1200);
+  });
+}
 let _lastLine = '';
 const randLine = state => {
   const a = STATE_LINES[state] || [stateNames[state] || state];
@@ -537,6 +576,7 @@ function applyTheme(t) {
     document.body.classList.add('grok-theme');
     // 切到 Grok：停掉彩色 39 状态轮询，启动 Grok 11 状态循环
     clearTimeout(stateTimer); clearTimeout(exprTimer); clearTimeout(chatterTimer);
+    stopCurveFx();               // 停掉彩色数学曲线特效层
     startGrokShow();
   } else {
     root.setProperty('--bot-color', selectedColor[2]);
@@ -863,7 +903,10 @@ function pausePet() {
   autoPaused = true;
   cancelAnimationFrame(rafId); rafId = null;
   clearTimeout(stateTimer); clearTimeout(exprTimer); clearTimeout(blinkTimer); clearTimeout(chatterTimer); clearTimeout(tagTimer);
+  clearTimeout(sketchTimer);
   clearInterval(fxSpawnTimer); clearInterval(fxFwTimer); clearInterval(fxBurstTimer);
+  clearInterval(fxNoteTimer); clearInterval(fxStarTimer);
+  stopCurveFx();
   stopShapeShow();                           // 暂停时中断变形秀
   stopGrokShow();                            // 暂停时中断 Grok 状态机
   fxLayer.className = '';                       // 关掉特效层（停止合成器活动）
@@ -942,12 +985,52 @@ function spawnFxParticle(type) {
   fxLayer.appendChild(s);
   setTimeout(() => s.remove(), 1800);
 }
+
+/* ===== 视频同款特效：音符（头顶上浮摇摆，粉/黄，1.7s 节奏循环） + 星星（四周放射放大淡出，金/白） ===== */
+const NOTE_COLORS = ['c-pink', 'c-yellow'];
+const STAR_COLORS = ['c-gold', 'c-white'];
+// 音符：从头顶 (114, 头部上方) 生成，粉/黄交替，单音符上浮摇摆
+function spawnNoteSwing(n = 2) {
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('span');
+    s.className = 'fx-note-swing ' + NOTE_COLORS[Math.floor(Math.random() * NOTE_COLORS.length)];
+    s.textContent = Math.random() < 0.5 ? '♪' : '♫';
+    const offY = (110 + Math.random() * 20) - i * 8;       // 头顶：身体中心上方
+    s.style.left = (114 + (Math.random() * 36 - 18)) + 'px';
+    s.style.top = (offY - 60) + 'px';                       // 从头顶高度开始
+    s.style.setProperty('--rot', (Math.random() * 16 - 8) + 'deg');
+    fxLayer.appendChild(s);
+    setTimeout(() => s.remove(), 1800);
+  }
+}
+// 星星：从身体中心向四周放射，金/白交替，缩放+淡出（--dx/--dy 由 JS 预计算）
+function spawnStarBurst(n = 10) {
+  const cols = STAR_COLORS;
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('span');
+    s.className = 'fx-star-burst ' + cols[i % cols.length];
+    s.textContent = '✦';
+    const ang = (Math.PI * 2 * i) / n + Math.random() * 0.3;
+    const dist = 88 + Math.random() * 52;   // 超过球半径(105)，从球面边缘向外放射
+    const dx = String(Math.cos(ang) * dist), dy = String(Math.sin(ang) * dist);
+    // 中间点为 55%/70%（备用，主动画在 CSS keyframes 中向前移动）
+    s.style.left = '114px'; s.style.top = '114px';           // 身体中心发射
+    s.style.setProperty('--dx', dx + 'px');
+    s.style.setProperty('--dy', dy + 'px');
+    s.style.setProperty('--dx1', (dx * 0.55).toFixed(1) + 'px');
+    s.style.setProperty('--dy1', (dy * 0.55).toFixed(1) + 'px');
+    s.style.setProperty('--dx2', (dx * 0.8).toFixed(1) + 'px');
+    s.style.setProperty('--dy2', (dy * 0.8).toFixed(1) + 'px');
+    fxLayer.appendChild(s);
+    setTimeout(() => s.remove(), 1300);
+  }
+}
 const FX_RING = { orbit: 'fx-orbit', radar: 'fx-radar', loading: 'fx-loading', alerting: 'fx-alert', searching: 'fx-scan' };
 const FX_DOTS = new Set(['loading', 'dictating', 'writing', 'uploading', 'sending', 'receiving']);
-const FX_PARTICLE = { happy: 360, excited: 220, sleeping: 600, humming: 520, thinking: 700, celebrate: 90, sad: 500, surprised: 380, scared: 420, angry: 340, laughing: 300 };
+const FX_PARTICLE = { happy: 360, sleeping: 600, thinking: 700, celebrate: 90, sad: 500, surprised: 380, scared: 420, angry: 340, laughing: 300 };  // humming/excited 已升级为 fxNoteSwing/fxStarBurst 专属特效
 const FX_BURST = { working: 1500, sending: 1100, receiving: 1100, uploading: 1300, dictating: 1700, writing: 1500 };
 const FX_FIREWORK = { celebrate: 850 };
-let fxFwTimer = null, fxBurstTimer = null;
+let fxFwTimer = null, fxBurstTimer = null, fxNoteTimer = null, fxStarTimer = null;
 // 粒子喷溅：从身体边缘随机角度喷出彩色小点（工作流状态）
 function spawnBurst(n = 12) {
   const cols = ['#ff5d9e', '#2f86ed', '#08c77a', '#ff9800', '#8656f6', '#ffd84d', '#79e2d0'];
@@ -997,19 +1080,138 @@ function spawnFirework() {
     }
   }, 540);
 }
+/* ===== 数学曲线粒子尾迹（math-curve-loaders 灵感，彩色模式） =====
+   thinking→圆形双线汇聚 / loading→玫瑰曲线 / working→利萨如曲线
+   粒子沿参数曲线游走，拖彩虹渐隐尾迹，曲线随 detailScale 呼吸胀缩 + 可选缓旋转 */
+const CURVE_COLORS = ['#ff5d9e', '#ff9800', '#ffd84d', '#08c77a', '#79e2d0', '#2f86ed', '#8656f6'];
+const MATH_CURVES = {
+  circle: { // 圆形双线汇聚：两条彩虹粒子链反向绕圆，相隔 180° 双向汇聚
+    strokeWidth: 2.2, rotate: false, particleCount: 48, trailSpan: 0.42, dual: true,
+    durationMs: 5200, rotationDurationMs: 28000, pulseDurationMs: 4600,
+    point(progress, detailScale, c) {
+      const t = progress * Math.PI * 2;
+      const r = c.r * detailScale;
+      return { x: 114 + r * Math.cos(t), y: 114 + r * Math.sin(t) };
+    }, r: 112,   // 圆环半径 112 > 球半径 105，环绕小球边界外侧（×0.98 呼吸后仍 ≥109）
+  },
+  rose: { // 玫瑰光环：r = Rbase + a·cos(kθ)（k=7 七瓣），环带在球边界外侧
+    strokeWidth: 2.0, rotate: true, particleCount: 64, trailSpan: 0.36,
+    durationMs: 5400, rotationDurationMs: 30000, pulseDurationMs: 4600,
+    point(progress, detailScale, c) {
+      const t = progress * Math.PI * 2;
+      const r = (c.rbase + c.a * Math.cos(c.k * t)) * detailScale;
+      return { x: 114 + r * Math.cos(t), y: 114 + r * Math.sin(t) };
+    }, rbase: 96, a: 16, k: 7,   // r ∈ [80, 112]：环带围绕小球边界
+  },
+  lissajous: { // 利萨如光环：x=a·sin(3t)  y=b·sin(2t)（工作波形），波形环在球外
+    strokeWidth: 2.0, rotate: false, particleCount: 72, trailSpan: 0.32,
+    durationMs: 8400, rotationDurationMs: 44000, pulseDurationMs: 6800,
+    point(progress, detailScale, c) {
+      const t = progress * Math.PI * 2;
+      const x = c.a * Math.sin(3 * t + 0.3) * (0.9 + 0.1 * detailScale);
+      const y = c.b * Math.sin(2 * t) * (0.9 + 0.1 * detailScale);
+      return { x: 114 + x, y: 114 + y };
+    }, a: 106, b: 102,   // 上下/左右振幅 > 球半径，波形环绕球外侧
+  },
+};
+const FX_CURVE = { thinking: 'circle', loading: 'rose', working: 'lissajous' };
+let curveFx = null; // { kind, wrap, path, pts[], start, raf, cfg }
+function normalizeProgress(p) { return ((p % 1) + 1) % 1; }
+function curveDetailScale(time, cfg, phase) {
+  const pp = ((time + phase * cfg.pulseDurationMs) % cfg.pulseDurationMs) / cfg.pulseDurationMs;
+  return 0.98 + ((Math.sin(pp * Math.PI * 2 + 0.55) + 1) / 2) * 0.02;   // 0.98~1.0 微呼吸：粒子始终在球边界外侧
+}
+function curveParticle(cfg, idx, progress, detailScale, count) {
+  const n = count || cfg.particleCount;
+  const tailOffset = idx / (n - 1);
+  const pt = cfg.point(normalizeProgress(progress - tailOffset * cfg.trailSpan), detailScale, cfg);
+  const fade = Math.pow(1 - tailOffset, 0.56);
+  return { x: pt.x, y: pt.y, r: 1.2 + fade * 3.2, o: 0.05 + fade * 0.95 };
+}
+function startCurveFx(kind) {
+  stopCurveFx();
+  const cfg = MATH_CURVES[kind];
+  if (!cfg) return;
+  fxLayer.classList.add('fx-curve');
+  const wrap = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  wrap.setAttribute('class', 'curve-wrap');
+  wrap.setAttribute('viewBox', '0 0 228 228');
+  const pts = [];
+  for (let i = 0; i < (cfg.dual ? cfg.particleCount * 2 : cfg.particleCount); i++) {
+    const ci = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    const col = CURVE_COLORS[i % CURVE_COLORS.length];
+    ci.setAttribute('fill', col);
+    pts.push(ci);
+    wrap.appendChild(ci);
+  }
+  fxLayer.appendChild(wrap);
+  curveFx = { kind, cfg, wrap, path: null, pts, start: performance.now(), phase: Math.random(), raf: null };
+  const tick = (now) => {
+    if (!curveFx) return;
+    const t = now - curveFx.start;
+    const progress = (t % cfg.durationMs) / cfg.durationMs;
+    const ds = curveDetailScale(t, cfg, curveFx.phase);
+    const rot = cfg.rotate ? -((t % cfg.rotationDurationMs) / cfg.rotationDurationMs) * 360 : 0;
+    wrap.setAttribute('transform', rot ? `rotate(${rot.toFixed(2)} 114 114)` : '');
+    if (cfg.dual) {
+      // 双线汇聚：链 A 正向走，链 B 相位 +0.5（相隔180°）反向汇聚
+      const half = Math.ceil(pts.length / 2);
+      for (let i = 0; i < pts.length; i++) {
+        const chain = i < half ? 0 : 1;
+        const j = chain === 0 ? i : i - half;
+        const prog = chain === 0 ? progress : normalizeProgress(progress + 0.5);
+        const p = curveParticle(cfg, j, prog, ds, half);
+        pts[i].setAttribute('cx', p.x.toFixed(2));
+        pts[i].setAttribute('cy', p.y.toFixed(2));
+        pts[i].setAttribute('r', p.r.toFixed(2));
+        pts[i].setAttribute('opacity', p.o.toFixed(3));
+      }
+    } else {
+      for (let i = 0; i < pts.length; i++) {
+        const p = curveParticle(cfg, i, progress, ds);
+        pts[i].setAttribute('cx', p.x.toFixed(2));
+        pts[i].setAttribute('cy', p.y.toFixed(2));
+        pts[i].setAttribute('r', p.r.toFixed(2));
+        pts[i].setAttribute('opacity', p.o.toFixed(3));
+      }
+    }
+    curveFx.raf = requestAnimationFrame(tick);
+  };
+  curveFx.raf = requestAnimationFrame(tick);
+}
+function stopCurveFx() {
+  if (!curveFx) return;
+  cancelAnimationFrame(curveFx.raf);
+  curveFx.wrap.remove();
+  fxLayer.classList.remove('fx-curve');
+  curveFx = null;
+}
+
 function setEffect(state) {
   fxLayer.className = '';
+  stopCurveFx();
   clearInterval(fxSpawnTimer); clearInterval(fxFwTimer); clearInterval(fxBurstTimer);
+  clearInterval(fxNoteTimer); clearInterval(fxStarTimer);
   fxSpawnTimer = null; fxFwTimer = null; fxBurstTimer = null;
+  fxNoteTimer = null; fxStarTimer = null;
   const dots = fxLayer.querySelector('.fx-dots');
   if (dots) dots.remove();
   const ring = FX_RING[state];
   if (ring) fxLayer.classList.add(ring);
+  if (FX_CURVE[state]) startCurveFx(FX_CURVE[state]);
   if (FX_DOTS.has(state)) {
     const d = document.createElement('div');
     d.className = 'fx-dots';
     d.innerHTML = '<i></i><i></i><i></i>';
     fxLayer.appendChild(d);
+  }
+  if (state === 'humming') {            // 视频同款音符：头顶上浮摇摆，1.7s 节奏循环
+    spawnNoteSwing(2);
+    fxNoteTimer = setInterval(() => { if (!autoPaused) spawnNoteSwing(2); }, 1700);
+  }
+  if (state === 'excited') {            // 视频同款星星：四周放射扩散放大淡出，金/白
+    spawnStarBurst(10);
+    fxStarTimer = setInterval(() => { if (!autoPaused) spawnStarBurst(10); }, 1500);
   }
   if (FX_PARTICLE[state]) {
     const rate = FX_PARTICLE[state];
@@ -1056,7 +1258,8 @@ function petSetState(name) {
   else chooseExpression(Math.floor(Math.random() * DATA.EXPRESSIONS.length)); // 容错：未知状态给随机表情
   stateMotion(name);
   setEffect(name);
-  showLine(name);
+  if (!autoPaused && Math.random() < 0.12 && SKETCHES.length) showSketch(pick(SKETCHES));
+  else showLine(name);
   // 庆祝：双脚连跳（烟花特效由 setEffect 负责）
   if (name === 'celebrate') playQuickAction('celebrate');
 }
