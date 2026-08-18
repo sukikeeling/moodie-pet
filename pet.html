@@ -1682,25 +1682,6 @@ function doAction6() {
   }, 2400);
 }
 
-  // 4. 随后各部分向中心合体融回圆球
-  safeActionTimeout(() => {
-    exclaimBar.style.transform = 'scale(0)';
-    exclaimBar.style.opacity = '0';
-    blueDot.style.transform = 'translate(0, 0) scale(0)';
-    blueDot.style.opacity = '0';
-    bodySprings.y.target = 0;
-    tinySpring.target = 1.0;
-    startShapeMorph('blob');
-    spawnBurst(16);
-  }, 1850);
-
-  safeActionTimeout(() => {
-    exclaimBar.remove();
-    blueDot.remove();
-    isActionPlaying = false;
-  }, 2400);
-}
-
 // 连贯动作7（人工盯帧版）：圆球缩小至小球 + 原地弹跳两下 + 变回圆球 + 连续轮询形状 + 回归圆球
 function doAction7() {
   if (isActionPlaying) return;
