@@ -42,6 +42,7 @@
   .eye { fill: var(--eye-color); transition: fill .5s ease; }
   .orbit { fill: none; stroke: #e36f3d; stroke-width: 1; stroke-dasharray: 5 6; opacity: 0; }
   .viewer.guides .orbit { opacity: .55; }
+  #spring-group { transition: opacity .22s ease, filter .28s ease; }
 
   /* mood speech tag（随宠物缩放反向缩放，保持可读） */
   .mood-tag {
@@ -1154,6 +1155,10 @@ function clearActionFx() {
   actionTimers.forEach(t => clearTimeout(t));
   actionTimers = [];
   if (actionLayer) actionLayer.innerHTML = '';
+  if (springGroup) {
+    springGroup.style.opacity = '1';
+    springGroup.style.filter = 'none';
+  }
 }
 
 function safeActionTimeout(fn, delay) {
@@ -1444,7 +1449,8 @@ function doAction4() {
   isActionPlaying = true;
   clearActionFx();
 
-  // 1. 主圆球缩小隐藏
+  // 1. 主圆球瞬间淡出隐藏
+  springGroup.style.opacity = '0';
   tinySpring.target = 0;
 
   // 2. 中央生成 3 个横排小球
@@ -1506,6 +1512,7 @@ function doAction4() {
   // 5. 融合完成，主圆球弹射复原
   safeActionTimeout(() => {
     dotsContainer.remove();
+    springGroup.style.opacity = '1';
     tinySpring.target = 1.0;
     startShapeMorph('blob');
     spawnBurst(16);
@@ -1522,7 +1529,8 @@ function doAction5() {
   isActionPlaying = true;
   clearActionFx();
 
-  // 1. 主球缩小隐藏，浮现极简倾斜感叹号主体
+  // 1. 主球淡出隐藏，浮现极简倾斜感叹号主体
+  springGroup.style.opacity = '0';
   tinySpring.target = 0;
 
   const alertWrap = document.createElement('div');
@@ -1586,6 +1594,7 @@ function doAction5() {
 
   safeActionTimeout(() => {
     alertWrap.remove();
+    springGroup.style.opacity = '1';
     tinySpring.target = 1.0;
     startShapeMorph('blob');
     spawnBurst(16);
@@ -1616,8 +1625,9 @@ function doAction6() {
     blueDot.style.opacity = '1';
   }, 100);
 
-  // 2. 主体圆球缩小成为感叹号下方小球，上方长条感叹号柱体落下
+  // 2. 主体圆球缩小成为感叹号下方小球（隐藏眼睛），上方长条感叹号柱体落下
   safeActionTimeout(() => {
+    eyeFadeSpring.target = 0;
     tinySpring.target = 0.32;
     bodySprings.y.target = 68; // 移至感叹号底部小圆点位置
   }, 300);
@@ -1651,6 +1661,26 @@ function doAction6() {
       { transform: 'translate(45px, -45px) rotate(0deg)', offset: 1 }
     ], { duration: 650, easing: 'ease-in-out' });
   }, 950);
+
+  // 4. 随后各部分向中心合体融回圆球
+  safeActionTimeout(() => {
+    exclaimBar.style.transform = 'scale(0)';
+    exclaimBar.style.opacity = '0';
+    blueDot.style.transform = 'translate(0, 0) scale(0)';
+    blueDot.style.opacity = '0';
+    eyeFadeSpring.target = 1;
+    bodySprings.y.target = 0;
+    tinySpring.target = 1.0;
+    startShapeMorph('blob');
+    spawnBurst(16);
+  }, 1850);
+
+  safeActionTimeout(() => {
+    exclaimBar.remove();
+    blueDot.remove();
+    isActionPlaying = false;
+  }, 2400);
+}
 
   // 4. 随后各部分向中心合体融回圆球
   safeActionTimeout(() => {
