@@ -77,7 +77,7 @@
   /* Panels */
   .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-top: 14px; box-shadow: 0 8px 30px rgba(70,30,110,.16); backdrop-filter: blur(8px); }
 
-  /* ===== 卡片堆叠（澎湃 OS / 微信照片堆叠风） ===== */
+  /* ===== 3D 卡片堆叠与翻转系统（Apple Card / 澎湃 3D 空间翻折） ===== */
   .stack-toolbar { display: flex; justify-content: space-between; align-items: center; margin: 16px 2px 10px; }
   .stack-tip { color: rgba(255,255,255,.95); font-size: 11px; text-shadow: 0 1px 6px rgba(60,20,90,.35); }
   .stack-styles { display: flex; gap: 6px; }
@@ -87,50 +87,143 @@
   }
   .stack-styles button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-  .card-stack { position: relative; height: 420px; perspective: 1400px; }
+  .card-stack {
+    position: relative;
+    height: 420px;
+    perspective: 1200px;
+    perspective-origin: 50% 40%;
+    transform-style: preserve-3d;
+  }
   .stack-card {
     position: absolute; left: 0; right: 0; top: 0; height: 100%;
-    background: rgba(255,255,255,.95);
-    border: 1px solid rgba(255,255,255,.75);
-    border-radius: 18px;
-    box-shadow: 0 12px 36px rgba(70,30,110,.2);
+    background: rgba(255,255,255,0.96);
+    border: 1px solid rgba(255,255,255,0.85);
+    border-radius: 20px;
+    box-shadow: 0 16px 40px rgba(70,30,110,0.18), 0 2px 6px rgba(0,0,0,0.06);
     overflow: hidden;
-    transform-origin: center bottom;
-    transition: transform .5s cubic-bezier(.34,1.45,.56,1), opacity .4s ease, box-shadow .4s ease;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform-origin: center center;
+    transition: transform .52s cubic-bezier(.34,1.4,.56,1), opacity .45s ease, box-shadow .45s ease, filter .45s ease;
     cursor: pointer;
+    will-change: transform, opacity;
   }
   .stack-card .card-head {
     display: flex; justify-content: space-between; align-items: center;
-    height: 54px; padding: 0 2px; user-select: none; touch-action: none;
+    height: 54px; padding: 0 14px; user-select: none; touch-action: none;
     position: sticky; top: 0; z-index: 2;
     background: linear-gradient(to bottom, rgba(255,255,255,.98), rgba(255,255,255,.9));
     border-bottom: 1px solid var(--line);
   }
   .stack-card .card-title { font-size: 14px; font-weight: 700; color: var(--text); }
   .stack-card .card-badge { color: var(--muted); font-size: 11px; }
-  .stack-card .card-body { padding: 10px 2px 18px; overflow-y: auto; height: calc(100% - 54px); }
-  /* 堆叠错位：向右下阶梯偏移 + 微旋转，每张卡的左边缘/底部都露出 */
-  .stack-card.pos-0 { transform: translate(0,0) rotate(0) scale(1); z-index: 10; box-shadow: 0 18px 48px rgba(70,30,110,.3); }
-  .stack-card.pos-1 { transform: translate(10px,12px) rotate(2deg) scale(.97); z-index: 9; }
-  .stack-card.pos-2 { transform: translate(20px,24px) rotate(-1.6deg) scale(.94); z-index: 8; }
-  .stack-card.pos-3 { transform: translate(30px,36px) rotate(1.2deg) scale(.91); z-index: 7; }
+  .stack-card .card-body { padding: 12px 14px 18px; overflow-y: auto; height: calc(100% - 54px); }
 
-  /* 切换风格动画 */
-  .stack-card.flip-out { animation: cardFlipOut .42s ease-in forwards; }
-  .stack-card.flip-in { animation: cardFlipIn .48s cubic-bezier(.22,1.2,.36,1) forwards; }
-  .stack-card.rotate-out { animation: cardRotateOut .4s ease-in forwards; }
-  .stack-card.rotate-in { animation: cardRotateIn .5s cubic-bezier(.34,1.45,.56,1) forwards; }
-  .stack-card.pop-out { animation: cardPopOut .38s ease-in forwards; }
-  .stack-card.pop-in { animation: cardPopIn .5s cubic-bezier(.34,1.45,.56,1) forwards; }
-  @keyframes cardFlipOut { to { transform: translateX(46px) rotateY(80deg); opacity: 0; } }
-  @keyframes cardFlipIn { from { transform: translateX(-46px) rotateY(-80deg); opacity: 0; } to { transform: none; opacity: 1; } }
-  @keyframes cardRotateOut { to { transform: translateY(-26px) rotate(18deg) scale(.72); opacity: 0; } }
-  @keyframes cardRotateIn { from { transform: translateY(34px) rotate(-12deg) scale(1.22); opacity: 0; } to { transform: none; opacity: 1; } }
-  @keyframes cardPopOut { to { transform: scale(.55) translateY(-44px); opacity: 0; } }
-  @keyframes cardPopIn { from { transform: scale(1.28); opacity: 0; } to { transform: none; opacity: 1; } }
+  /* 3D 纵深梯队错位：结合 translate3d 深度分层 + 柔和倾角，营造真实桌面立体卡包质感 */
+  .stack-card.pos-0 {
+    transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1);
+    z-index: 10;
+    opacity: 1;
+    filter: brightness(1);
+    box-shadow: 0 22px 54px rgba(70,30,110,.28), 0 4px 12px rgba(0,0,0,.08);
+  }
+  .stack-card.pos-1 {
+    transform: translate3d(12px, 14px, -36px) rotateX(1.8deg) rotateY(-1.2deg) rotateZ(1.8deg) scale(.97);
+    z-index: 9;
+    opacity: .95;
+    filter: brightness(.97);
+    box-shadow: 0 14px 36px rgba(70,30,110,.16);
+  }
+  .stack-card.pos-2 {
+    transform: translate3d(24px, 28px, -72px) rotateX(3.2deg) rotateY(-2.6deg) rotateZ(-1.4deg) scale(.94);
+    z-index: 8;
+    opacity: .88;
+    filter: brightness(.93);
+    box-shadow: 0 10px 28px rgba(70,30,110,.12);
+  }
+  .stack-card.pos-3 {
+    transform: translate3d(36px, 42px, -108px) rotateX(4.5deg) rotateY(-4.0deg) rotateZ(1.2deg) scale(.91);
+    z-index: 7;
+    opacity: .78;
+    filter: brightness(.88);
+    box-shadow: 0 6px 20px rgba(70,30,110,.08);
+  }
 
-  /* 拖拽翻卡 */
-  .stack-card.dragging { transition: none; cursor: grabbing; box-shadow: 0 24px 60px rgba(70,30,110,.35); }
+  /* ===== 核心：3D 翻转/反转动画（极致自然的透视弧线 + 空间翻牌） ===== */
+  .stack-card.flip-out {
+    animation: cardFlip3DOut .46s cubic-bezier(.38, 0, .24, 1) forwards;
+    transform-origin: left center;
+  }
+  .stack-card.flip-in {
+    animation: cardFlip3DIn .54s cubic-bezier(.2, 1.25, .35, 1) forwards;
+    transform-origin: right center;
+  }
+
+  @keyframes cardFlip3DOut {
+    0% {
+      transform: translate3d(0, 0, 0) rotateY(0deg) rotateX(0deg) scale(1);
+      opacity: 1;
+      box-shadow: 0 22px 54px rgba(70,30,110,.28);
+    }
+    30% {
+      transform: translate3d(28px, -14px, 45px) rotateY(-32deg) rotateX(4deg) scale(1.02);
+      opacity: .95;
+      box-shadow: -20px 30px 65px rgba(70,30,110,.35);
+    }
+    100% {
+      transform: translate3d(110px, 12px, -120px) rotateY(-90deg) rotateZ(-6deg) scale(.84);
+      opacity: 0;
+      box-shadow: 0 4px 10px rgba(0,0,0,0);
+    }
+  }
+
+  @keyframes cardFlip3DIn {
+    0% {
+      transform: translate3d(-100px, 20px, -90px) rotateY(85deg) rotateZ(5deg) scale(.86);
+      opacity: 0;
+      filter: brightness(1.15);
+    }
+    65% {
+      transform: translate3d(8px, -5px, 24px) rotateY(-8deg) rotateX(-2deg) scale(1.02);
+      opacity: 1;
+      filter: brightness(1.02);
+    }
+    100% {
+      transform: translate3d(0, 0, 0) rotateY(0deg) rotateX(0deg) scale(1);
+      opacity: 1;
+      filter: brightness(1);
+    }
+  }
+
+  /* 旋转风格 3D 优化 */
+  .stack-card.rotate-out { animation: cardRotate3DOut .44s cubic-bezier(.4, 0, .2, 1) forwards; }
+  .stack-card.rotate-in { animation: cardRotate3DIn .54s cubic-bezier(.34, 1.45, .56, 1) forwards; }
+  @keyframes cardRotate3DOut {
+    to { transform: translate3d(20px, -36px, 60px) rotate(22deg) rotateY(-20deg) scale(.72); opacity: 0; }
+  }
+  @keyframes cardRotate3DIn {
+    from { transform: translate3d(-20px, 42px, -80px) rotate(-16deg) rotateY(20deg) scale(1.18); opacity: 0; }
+    to { transform: translate3d(0,0,0) rotate(0) rotateY(0) scale(1); opacity: 1; }
+  }
+
+  /* 弹出风格 3D 优化 */
+  .stack-card.pop-out { animation: cardPop3DOut .4s ease-in forwards; }
+  .stack-card.pop-in { animation: cardPop3DIn .54s cubic-bezier(.34, 1.45, .56, 1) forwards; }
+  @keyframes cardPop3DOut {
+    to { transform: translate3d(0, -48px, -100px) scale(.62); opacity: 0; }
+  }
+  @keyframes cardPop3DIn {
+    from { transform: translate3d(0, 24px, 80px) scale(1.24); opacity: 0; }
+    to { transform: translate3d(0,0,0) scale(1); opacity: 1; }
+  }
+
+  /* 拖拽交互 3D 实时翻折倾斜状态 */
+  .stack-card.dragging {
+    transition: none !important;
+    cursor: grabbing;
+    box-shadow: 0 28px 70px rgba(70,30,110,.4), 0 0 0 1px rgba(255,255,255,.9) inset;
+  }
   .panel-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: 12px; font-weight: 600; }
   .panel-title b { float: right; font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 11px; }
 
@@ -3807,7 +3900,7 @@ function stackAnimate(nextOrder) {
     stackOrder = nextOrder;
     stackRender();
     stackAnimating = false;
-  }, 480);
+  }, 520);
 }
 // 单击某卡 → 提到最前（丝滑展开），其余保持相对顺序
 function stackBring(idx) {
@@ -3833,10 +3926,17 @@ stackCards.forEach(card => {
   head.addEventListener('pointermove', e => {
     if (!dragState || dragState.card !== card) return;
     const dx = e.clientX - dragState.x;
-    if (Math.abs(dx) > 4) dragState.moved = true;
+    const dy = e.clientY - dragState.y;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) dragState.moved = true;
     if (dragState.moved) {
       card.classList.add('dragging');
-      card.style.transform = `translateX(${dx * 0.25}px) rotate(${dx * 0.12}deg)`;
+      const rotY = Math.max(-36, Math.min(36, dx * 0.16));
+      const rotX = Math.max(-15, Math.min(15, -dy * 0.1));
+      const rotZ = Math.max(-12, Math.min(12, dx * 0.06));
+      const transX = dx * 0.42;
+      const transY = dy * 0.15;
+      const transZ = Math.min(60, Math.abs(dx) * 0.35);
+      card.style.transform = `translate3d(${transX.toFixed(1)}px, ${transY.toFixed(1)}px, ${transZ.toFixed(1)}px) rotateY(${rotY.toFixed(1)}deg) rotateX(${rotX.toFixed(1)}deg) rotateZ(${rotZ.toFixed(1)}deg) scale(1.02)`;
     }
   });
   const endDrag = e => {
@@ -3844,8 +3944,8 @@ stackCards.forEach(card => {
     const dx = e.clientX - dragState.x;
     card.classList.remove('dragging');
     card.style.transform = '';
-    if (dragState.moved && Math.abs(dx) > 55) {
-      stackCycle();  // 拖动 → 循环切下一张
+    if (dragState.moved && Math.abs(dx) > 48) {
+      stackCycle();  // 拖动 → 顺势 3D 翻牌切下一张
     }
     dragState = null;
   };
