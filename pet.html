@@ -1734,11 +1734,12 @@ function doAction8(targetShape, targetExpr) {
   isActionPlaying = true;
   clearActionFx();
 
-  // 1. 蓄力起风：身体轻微下沉蓄能，开始自旋
+  // 1. 蓄力起风：身体自旋蓄能并凝聚为中心高能光核
   const initialRot = bodySprings.rotate.x;
   bodySprings.scaleX.target = 1.06;
   bodySprings.scaleY.target = 0.94;
-  tinySpring.target = 0.85;
+  tinySpring.target = 0.45;
+  springGroup.style.filter = 'brightness(1.4) drop-shadow(0 0 16px var(--bot-color))';
   showMood('🌪️ 粒子风暴汇聚中…');
 
   // 2. 创建 4 臂向心螺旋旋转风暴粒子群
@@ -1813,6 +1814,7 @@ function doAction8(targetShape, targetExpr) {
   // 3. 风暴中心能量爆发 & 变身为多样形态 + 萌感表情（1050ms）
   safeActionTimeout(() => {
     stormContainer.remove();
+    springGroup.style.filter = 'none';
 
     // 变身形态多样化：云朵、蛋形、水滴、圆角方、六边体、胶囊、三角体等随机挑选
     const candidateShapes = ['cloud', 'egg', 'drop', 'squircle', 'hex', 'capsule', 'triangle', 'pebble'];
