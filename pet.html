@@ -56,14 +56,8 @@
     transition: opacity .35s ease, transform .45s cubic-bezier(.34,1.6,.56,1);
   }
   .mood-tag.show { opacity: 1; transform: translate(-50%, 0) scale(calc(1 * var(--inv))); }
-  .mood-tag::after {
-    content: ""; position: absolute; bottom: -5px; left: 50%;
-    transform: translateX(-50%) scale(var(--inv));
-    border: 6px solid transparent; border-top-color: #fff;
-  }
   /* Grok 主题：弹出词黑底白字极简风 */
   body.grok-theme .mood-tag { background: #0d0d0f; color: #fff; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
-  body.grok-theme .mood-tag::after { border-top-color: #0d0d0f; }
 
   /* 尺寸控制（悬停显示，反向缩放保持可点） */
   .size-ctrl {
@@ -444,7 +438,7 @@ const STATE_LINES = {
   suspicious:['嗯？？有猫腻','不对劲…','让我查查你','(￢_￢) 盯'],
   angry:['哼！！','气鼓鼓了','别惹我哦','我要生气了！'],
   drowsy:['哈欠～','眼皮在打架…','好困…撑不住了','让我眯五分钟…'],
-  happy:['嘿嘿～','今天心情满分','阳光正好～','美滋滋(◡‿◡)'],
+  happy:['嘿嘿～','心电感应发射！','今天心情满分','阳光正好～','美滋滋(◡‿◡)'],
   curious:['这是什么？','让我瞅瞅…','好想戳一下','咦？有情况'],
   confused:['啊？啊？','等等…发生了什么','我是不是漏了什么','脑子打结了(⊙﹏⊙)'],
   bored:['好无聊呀…','时间过得好慢','谁来陪我玩','扣手指中…'],
@@ -453,7 +447,7 @@ const STATE_LINES = {
   sad:['呜…','心情有点down','让我静静…','蓝瘦香菇'],
   laughing:['哈哈哈哈！','笑死我了','肚子笑疼了','太好笑了吧'],
   scared:['哇！吓我一跳！','不要过来…','瑟瑟发抖中','救命！'],
-  playful:['来追我呀～','皮一下很开心','嘿嘿，你抓不到我','躲猫猫？'],
+  playful:['来追我呀～','给你一个 Wink ✨','皮一下很开心','(*^▽^*) 眨眨眼～','嘿嘿，你抓不到我','躲猫猫？'],
   celebrate:['耶！！成功啦！','放烟花庆祝！','太棒了吧！','圆满！收工！'],
   orbit:['绕个圈巡逻～','轨道运行中','转一圈回来','观察四周中'],
   radar:['雷达扫描中…','滴滴…滴滴…','发现目标！','信号探测中'],
@@ -543,6 +537,22 @@ const STATE_LOOP = {
 let eyePulse = 0;
 
 const GROKBOT_COLORS = [['cocoa','可可棕','#9a6737'],['red','活力红','#ff3347'],['orange','暖橙','#ff6a00'],['amber','琥珀','#ff9800'],['green','青绿','#08c77a'],['teal','湖蓝','#08b9a9'],['blue','经典蓝','#2f86ed'],['purple','梦幻紫','#8656f6'],['pink','桃粉','#ff2d8b'],['black','纯黑','#000000']];
+const COLOR_LINES = {
+  cocoa:  ['浓郁可可棕 ☕', '来杯热可可～', '巧克力味变身！', '可可色好温暖～'],
+  red:    ['活力红扑扑 🔥', '热情似火～', '元气红超显白！', '像颗熟透的小樱桃 🍒'],
+  orange: ['暖暖橘子色 🍊', '太阳橙子汽水～', '温暖橘光洒下来啦', '元气甜橙！'],
+  amber:  ['晶莹琥珀黄 ✨', '焦糖布丁色 🍮', '闪闪发光的琥珀～', '金色阳光的味道'],
+  green:  ['清新薄荷绿 🌿', '抹茶冰淇淋 🍵', '青葱森林的气息～', '今天绿意满满！'],
+  teal:   ['清澈湖水蓝 🌊', '海盐薄荷苏打～', '碧波荡漾湖蓝！', '好清爽的感觉'],
+  blue:   ['经典蔚蓝天空 💙', '晴空万里蓝～', '静谧深邃之蓝！', '像纯净的蓝宝石'],
+  purple: ['梦幻香芋紫 💜', '薰衣草甜梦 ✨', '神秘星云紫变身！', '优雅浪漫紫～'],
+  pink:   ['甜心蜜桃粉 🍓', '心动草莓粉 💕', '粉嘟嘟的可爱！', '少女心爆棚啦～'],
+  black:  ['酷炫黑曜石 ⚫', '低调极客黑～', '神秘暗影夜行者！', '极简酷盖黑！']
+};
+function getColorLine(id) {
+  const lines = COLOR_LINES[id] || ['换上新颜色啦 ✨', '新色新心情～'];
+  return pick(lines);
+}
 let selectedColor = GROKBOT_COLORS[8]; // 桃粉
 let theme = 'colorful';                 // 'colorful' 彩色可爱 | 'grok' 极简黑球白眼
 function applyColor(item) {
@@ -1506,76 +1516,80 @@ function doAction4() {
   }, 2750);
 }
 
-// 连贯动作5（人工盯帧版）：水滴笔尖 + 笔杆组合毛笔 + 倾斜15°向右平移点缀跳动 + 右侧融合变回圆球
+// 连贯动作5（升级版 · 官方警示倾斜感叹号巡弋）：圆球形变倾斜感叹号+水滴点 + 17.7° 倾斜优雅巡游后退 + 融回归位
 function doAction5() {
   if (isActionPlaying) return;
   isActionPlaying = true;
   clearActionFx();
 
-  // 1. 主球缩小隐藏
+  // 1. 主球缩小隐藏，浮现极简倾斜感叹号主体
   tinySpring.target = 0;
 
-  // 2. 浮现毛笔组合体
-  const brushWrap = document.createElement('div');
-  brushWrap.className = 'brush-holder';
-  brushWrap.innerHTML = `
-    <div class="brush-body"></div>
-    <div class="brush-tip"></div>
+  const alertWrap = document.createElement('div');
+  alertWrap.className = 'brush-holder';
+  alertWrap.innerHTML = `
+    <div style="position:absolute;left:-14px;top:-46px;width:28px;height:72px;background:var(--bot-color);border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,0.25);"></div>
+    <div style="position:absolute;left:-11px;top:38px;width:22px;height:24px;background:var(--bot-color);border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;box-shadow:0 4px 12px rgba(0,0,0,0.2);"></div>
   `;
-  actionLayer.appendChild(brushWrap);
+  actionLayer.appendChild(alertWrap);
 
-  // 3. 毛笔倾斜 15°，从左向右平移，水滴笔尖上下轻快跳动点缀
-  brushWrap.style.transform = 'translate(-42px, 12px) rotate(15deg) scale(0.2)';
-  brushWrap.style.opacity = '0';
-  brushWrap.style.transition = 'transform .45s cubic-bezier(.34,1.4,.56,1), opacity .35s ease';
+  alertWrap.style.transform = 'translate(-38px, 0px) rotate(17.7deg) scale(0.2)';
+  alertWrap.style.opacity = '0';
+  alertWrap.style.transition = 'transform .4s cubic-bezier(.34,1.4,.56,1), opacity .3s ease';
 
   safeActionTimeout(() => {
-    brushWrap.style.opacity = '1';
-    brushWrap.style.transform = 'translate(-36px, 0px) rotate(15deg) scale(1)';
+    alertWrap.style.opacity = '1';
+    alertWrap.style.transform = 'translate(-32px, 0px) rotate(17.7deg) scale(1)';
   }, 80);
 
-  // 4. 向右平移动画 + 笔尖跳动点缀
+  // 2. 官方同款平滑向前滑动（1.5s）+ 顺滑向后回退归位
   safeActionTimeout(() => {
     let startT = performance.now();
-    const moveDur = 1650;
-    function moveTick(now) {
-      const p = Math.min((now - startT) / moveDur, 1);
-      const ease = p * (2 - p); // easeOutQuad
-      const curX = -36 + ease * 82; // 从 -36px 平移到 +46px
-      const bobY = Math.sin(p * Math.PI * 6) * 9; // 上下轻快跳动 3 个波峰
-      brushWrap.style.transform = `translate(${curX}px, ${bobY}px) rotate(15deg) scale(1)`;
+    const tilt = 17.7;
 
-      // 在跳动波峰洒落小墨点/彩色粒子
-      if (Math.random() < 0.16) {
+    function moveTick(now) {
+      const elapsed = (now - startT) / 1000;
+      const p = Math.min(elapsed / 1.5, 1);
+      const ease = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+      const travel = ease * 76 - 32; // -32px -> +44px
+      const back = elapsed > 1.5 ? Math.min((elapsed - 1.5) / 0.45, 1) : 0;
+      const easeBack = Math.sin(back * Math.PI / 2);
+      const curX = travel * (1 - easeBack) + (-10) * easeBack;
+      const buzz = Math.sin(elapsed * 2.5 * Math.PI * 2) * 2.5;
+
+      alertWrap.style.transform = `translate(${curX}px, ${buzz}px) rotate(${tilt}deg) scale(1)`;
+
+      // 在滑行波峰洒落轻柔流光粒子
+      if (Math.random() < 0.14) {
         const dot = document.createElement('div');
         dot.className = 'fx-fw';
         dot.style.left = (114 + curX) + 'px';
-        dot.style.top = (114 + bobY + 16) + 'px';
+        dot.style.top = (114 + buzz + 20) + 'px';
         dot.style.background = '#ff5d9e';
-        dot.style.setProperty('--dx', (Math.random() * 24 - 12) + 'px');
-        dot.style.setProperty('--dy', (10 + Math.random() * 18) + 'px');
+        dot.style.setProperty('--dx', (Math.random() * 20 - 10) + 'px');
+        dot.style.setProperty('--dy', (6 + Math.random() * 14) + 'px');
         actionLayer.appendChild(dot);
-        setTimeout(() => dot.remove(), 700);
+        setTimeout(() => dot.remove(), 600);
       }
 
-      if (p < 1) requestAnimationFrame(moveTick);
+      if (elapsed < 2.0) requestAnimationFrame(moveTick);
     }
     requestAnimationFrame(moveTick);
-  }, 480);
+  }, 420);
 
-  // 5. 退到右侧后水滴变大与笔杆融合，平滑变回圆球
+  // 3. 回退归位后各部件向中心融合变回圆球
   safeActionTimeout(() => {
-    brushWrap.style.transition = 'transform .4s ease, opacity .4s ease';
-    brushWrap.style.transform = 'translate(0px, 0px) rotate(0deg) scale(1.4)';
-    brushWrap.style.opacity = '0';
-  }, 2200);
+    alertWrap.style.transition = 'transform .4s ease, opacity .4s ease';
+    alertWrap.style.transform = 'translate(0px, 0px) rotate(0deg) scale(1.3)';
+    alertWrap.style.opacity = '0';
+  }, 2250);
 
   safeActionTimeout(() => {
-    brushWrap.remove();
+    alertWrap.remove();
     tinySpring.target = 1.0;
     startShapeMorph('blob');
     spawnBurst(16);
-  }, 2550);
+  }, 2600);
 
   safeActionTimeout(() => {
     isActionPlaying = false;
@@ -1703,17 +1717,180 @@ function doAction7() {
   }, 1600 + morphSequence.length * 420 + 200);
 }
 
+// 连贯动作8（新增）：粒子旋转风暴变身！多臂旋涡粒子向心加速内聚 + 身体高速旋转蓄能 + 能量冲击波爆发变身
+function doAction8(targetShape, targetExpr) {
+  if (isActionPlaying) return;
+  isActionPlaying = true;
+  clearActionFx();
+
+  // 1. 蓄力起风：身体轻微下沉蓄能，开始自旋
+  const initialRot = bodySprings.rotate.x;
+  bodySprings.scaleX.target = 1.06;
+  bodySprings.scaleY.target = 0.94;
+  tinySpring.target = 0.85;
+  showMood('🌪️ 粒子风暴汇聚中…');
+
+  // 2. 创建 4 臂向心螺旋旋转风暴粒子群
+  const colors = ['#ff5d9e', '#ffd84d', '#08c77a', '#79e2d0', '#2f86ed', '#8656f6', '#ff9800', '#ffffff'];
+  const particleCount = 42;
+  const stormContainer = document.createElement('div');
+  stormContainer.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:6;';
+  actionLayer.appendChild(stormContainer);
+
+  const stormDuration = 1000;
+  const stormStart = performance.now();
+
+  const particles = [];
+  for (let i = 0; i < particleCount; i++) {
+    const arm = i % 4;
+    const armAngle = (arm * Math.PI / 2);
+    const rOffset = 70 + (i / particleCount) * 55;
+    const initAngle = armAngle + (i / particleCount) * Math.PI * 1.2;
+    const col = colors[i % colors.length];
+    const sz = 6 + (i % 4) * 2.5;
+
+    const el = document.createElement('div');
+    el.style.cssText = `
+      position: absolute; left: 114px; top: 114px;
+      width: ${sz}px; height: ${sz}px; margin-left: ${-sz/2}px; margin-top: ${-sz/2}px;
+      border-radius: 50%;
+      background: ${col};
+      box-shadow: 0 0 12px ${col}, 0 0 22px ${col};
+      opacity: 0; pointer-events: none;
+    `;
+    stormContainer.appendChild(el);
+    particles.push({ el, r0: rOffset, theta0: initAngle, delay: (i % 6) * 40 });
+  }
+
+  let stormRaf = null;
+  function stormTick(now) {
+    const elapsed = now - stormStart;
+    const p = Math.min(elapsed / stormDuration, 1);
+
+    // 身体自旋加速与微缩
+    const spinP = Math.pow(p, 1.8);
+    bodySprings.rotate.target = initialRot + spinP * 720;
+    bodySprings.y.target = Math.sin(p * Math.PI * 6) * 4;
+    tinySpring.target = 0.85 - p * 0.25;
+
+    // 粒子沿对数螺旋向中心内聚加速
+    particles.forEach(pt => {
+      const ptElapsed = Math.max(0, elapsed - pt.delay);
+      const ptProgress = Math.min(ptElapsed / (stormDuration - pt.delay * 0.6), 1);
+
+      const easeR = Math.pow(ptProgress, 1.6);
+      const r = pt.r0 * (1 - easeR);
+      const easeTheta = Math.pow(ptProgress, 1.4);
+      const theta = pt.theta0 + easeTheta * (Math.PI * 4.2);
+
+      const px = r * Math.cos(theta);
+      const py = r * Math.sin(theta);
+
+      const op = ptProgress < 0.15 ? ptProgress / 0.15 : (ptProgress > 0.9 ? (1 - ptProgress) / 0.1 : 1);
+      const scale = (0.5 + 0.8 * (1 - ptProgress * 0.5));
+
+      pt.el.style.transform = `translate(${px}px, ${py}px) scale(${scale})`;
+      pt.el.style.opacity = String(op);
+    });
+
+    if (p < 1) {
+      stormRaf = requestAnimationFrame(stormTick);
+    }
+  }
+  stormRaf = requestAnimationFrame(stormTick);
+
+  // 3. 风暴中心能量爆发 & 变身为多样形态 + 萌感表情（1050ms）
+  safeActionTimeout(() => {
+    stormContainer.remove();
+
+    // 变身形态多样化：云朵、蛋形、水滴、圆角方、六边体、胶囊、三角体等随机挑选
+    const candidateShapes = ['cloud', 'egg', 'drop', 'squircle', 'hex', 'capsule', 'triangle', 'pebble'];
+    const chosenShape = targetShape || pick(candidateShapes);
+    const candidateExprs = [25, 2, 17, 11, 21, 8];
+    const chosenExpr = targetExpr !== undefined ? targetExpr : pick(candidateExprs);
+
+    startShapeMorph(chosenShape);
+    chooseExpression(chosenExpr);
+
+    const shapeLines = {
+      cloud: '欸？云朵！✨',
+      drop: '变水滴啦 💧',
+      egg: '圆滚滚蛋形 🥚',
+      squircle: '圆角方方块 ◻️',
+      hex: '六边几何体 ⬡',
+      capsule: '变胶囊形态 💊',
+      triangle: '小三角体 🔺',
+      pebble: '光滑鹅卵石 ✨'
+    };
+    showMood(shapeLines[chosenShape] || '✨ 旋转风暴变身！');
+
+    // 身体回弹与爆发冲击波
+    bodySprings.rotate.target = 0;
+    bodySprings.y.target = -12;
+    tinySpring.target = 1.22;
+    eyePulse = 1.6;
+
+    // 产生强烈的能量粒子爆发与星光散开
+    spawnBurst(24);
+    spawnStarBurst(10);
+
+    // 环形彩虹冲击波
+    spawnRainbowArcWrap({
+      cx: 114, cy: 114,
+      rx: 85, ry: 45,
+      tiltDeg: 45,
+      colors: [['#ff5d9e', '#ffd84d'], ['#08c77a', '#79e2d0'], ['#2f86ed', '#8656f6']],
+      duration: 1200,
+      count: 4
+    });
+
+    safeActionTimeout(() => {
+      tinySpring.target = 1.0;
+      bodySprings.y.target = 0;
+    }, 280);
+  }, 1050);
+
+  // 4. 变身展示维持 1.8s 后，优雅变回圆球基础形态（blob）
+  safeActionTimeout(() => {
+    startShapeMorph('blob');
+    bodySprings.rotate.target = 0;
+    bodySprings.y.target = 0;
+    tinySpring.target = 1.0;
+    spawnBurst(12);
+  }, 2850);
+
+  // 5. 动作完整收尾
+  safeActionTimeout(() => {
+    isActionPlaying = false;
+  }, 3350);
+}
+
 // 动画导演：独立运行动作序列，不与状态强绑定
-const ACTIONS = [doAction1, doAction2, doAction3, doAction4, doAction5, doAction6, doAction7];
+const ACTIONS = [doAction1, doAction2, doAction3, doAction4, doAction5, doAction6, doAction7, doAction8];
 window.playAction = function(num) {
-  if (num >= 1 && num <= 7) {
+  if (num >= 1 && num <= 8) {
     ACTIONS[num - 1]();
   }
 };
 
+function pickDirectorAction() {
+  return pick(ACTIONS);
+}
+
 function scheduleAction() {
-  if (autoPaused || theme === 'grok' || !ACTIONS.length || isActionPlaying) return;
-  if (Math.random() < 0.14) pick(ACTIONS)();
+  if (autoPaused || !ACTIONS.length || isActionPlaying || dragging) return;
+  if (Math.random() < 0.12) pickDirectorAction()();
+}
+
+let actionLoopTimer = null;
+function scheduleActionLoop() {
+  clearTimeout(actionLoopTimer);
+  actionLoopTimer = setTimeout(() => {
+    if (!autoPaused && !isActionPlaying && !dragging) {
+      pickDirectorAction()();
+    }
+    scheduleActionLoop();
+  }, rand(45000, 90000)); // 温和舒适的频率：每 45~90 秒（约 1~1.5 分钟）轮巡一次大动作
 }
 
 function setEffect(state) {
@@ -1869,6 +2046,7 @@ window.addEventListener('pointermove', (e) => {
   pitchSpring.target = dragPitch;
   if (window.electronAPI && window.electronAPI.dragMove) window.electronAPI.dragMove();
 });
+let clickCount = 0, clickTimer = null;
 function endDrag() {
   if (!dragging) return;
   dragging = false;
@@ -1876,20 +2054,31 @@ function endDrag() {
   yawSpring.target = 0; pitchSpring.target = 0;
   if (window.electronAPI && window.electronAPI.dragEnd) window.electronAPI.dragEnd();
   if (moveDist < 6) {
+    clickCount++;
+    clearTimeout(clickTimer);
+    clickTimer = setTimeout(() => { clickCount = 0; }, 380);
+
+    if (clickCount >= 2) {
+      // 双击：立即触发超炫「粒子旋转风暴变身」！
+      clickCount = 0;
+      doAction8();
+      return;
+    }
+
     if (theme === 'grok') {
-      // Grok 主题：单击 = 随机切换一个状态/表情（规格交互要求）
+      // Grok 主题：单击 = 切换状态
       const name = pick(GROK_ORDER);
       grokSetState(name);
       clearTimeout(grokTimer);
       const def = GROK_SHAPES_DEF[name];
       grokTimer = setTimeout(grokNext, rand(def.dur[0], def.dur[1]));
-      showMood(pick(['嗯？', '嘿嘿', '在呢', '戳我干嘛']));
+      showMood(pick(['嗯？', '嘿嘿', '在呢', '戳我干嘛', '双击我有变身秀✨']));
     } else {
-      // 摸头撒娇：爱心上浮 + 傲娇台词 + 轻柔挤压
+      // 彩色主题：单击 = 摸头撒娇 + 爱心与微弹
       reaction = { type: 'squash', t: 0, dur: 620 };
       eyePulse = 1; blink();
       for (let i = 0; i < 3; i++) setTimeout(() => spawnFxParticle('happy'), i * 180);
-      showMood(pick(['嘿嘿~被摸头啦','舒服～(◡‿◡)','再来一下嘛','哎呀别戳啦']));
+      showMood(pick(['嘿嘿~被摸头啦','舒服～(◡‿◡)','再来一下嘛','哎呀别戳啦','双击我有变身秀✨']));
     }
   }
 }
@@ -1926,8 +2115,14 @@ activeState = 'idle';
 showMood('Sonnet Bot 上线啦~');
 rafId = requestAnimationFrame(frame);
 // 尺寸按钮已移到右键菜单，悬停按钮取消
-// 启动自动轮询 + 自言自语（延迟 2s 让开场白先显示完，且首次跳小剧场）
-initTimer = setTimeout(() => { initTimer = null; cycleExpr(); changeState(); scheduleBlinkPet(); }, 2000);
+// 启动自动轮询 + 自言自语（延迟 2s 让开场白先显示完）
+initTimer = setTimeout(() => {
+  initTimer = null;
+  cycleExpr();
+  changeState();
+  scheduleBlinkPet();
+  scheduleActionLoop();
+}, 2000);
 scheduleChatter();
 
 /* ===== 给菜单/外部调用的接口 ===== */
@@ -1938,7 +2133,15 @@ function applyColorByHex(hex) {
 }
 window.moodiePet = {
   nextMood: () => { const s = pick(ALL_STATES.filter(x => x !== activeState)) || pick(ALL_STATES); petSetState(s); },
-  randomLook: () => { applyColor(pick(GROKBOT_COLORS)); chooseExpression(Math.floor(Math.random() * DATA.EXPRESSIONS.length)); playQuickAction(pick(['bounce','peek','wave','squish','shake'])); },
+  randomLook: () => {
+    const col = pick(GROKBOT_COLORS);
+    applyColor(col);
+    chooseExpression(Math.floor(Math.random() * DATA.EXPRESSIONS.length));
+    playQuickAction(pick(['bounce','peek','wave','squish','shake']));
+    showMood(pick(['今日新穿搭 ✨', '新造型打卡！', '换了一套新皮肤～', '怎么样，好看吗？']));
+  },
+  wink: () => { chooseExpression(25); showMood('给你一个 Wink ✨'); spawnFxParticle('excited'); playQuickAction('peek'); },
+  particleStorm: (s, e) => doAction8(s, e),
   togglePause,
   idlePause: pausePet,
   idleResume: resumePet,
@@ -1948,9 +2151,20 @@ window.moodiePet = {
 if (window.electronAPI && window.electronAPI.onMenuAction) {
   window.electronAPI.onMenuAction((action) => {
     if (action.indexOf('theme:') === 0) { applyTheme(action.slice(6)); showMood(action.slice(6) === 'grok' ? 'Sonnet 极简风 ✓' : '彩色风 ✓'); }
-    else if (action.indexOf('color:') === 0) { applyColorByHex(action.slice(6)); showMood('换色~'); }
-    else if (action.indexOf('shape:') === 0) { applyShape(action.slice(6)); showMood('变' + (selectedShape[1]) + '～'); }
+    else if (action.indexOf('color:') === 0) {
+      const hex = action.slice(6);
+      applyColorByHex(hex);
+      const item = GROKBOT_COLORS.find(c => c[2].toLowerCase() === hex.toLowerCase());
+      if (item) showMood(getColorLine(item[0]));
+      else showMood('换上新颜色啦 ✨');
+    }
+    else if (action.indexOf('shape:') === 0) {
+      const sId = action.slice(6);
+      applyShape(sId);
+      showMood(sId === 'cloud' ? '欸？云朵！' : '变' + (selectedShape[1]) + '～');
+    }
     else if (action.indexOf('accessory:') === 0) { toggleAccessory(action.slice(10)); }
+    else if (action === 'action:storm' || action === 'particleStorm') { doAction8(); }
     else if (action.indexOf('size:') === 0) {
       const v = action.slice(5);
       if (v === 'minus') applyScale(petScale * 2/3);
