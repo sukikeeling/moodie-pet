@@ -130,17 +130,38 @@
   #fx > span, #fx::before, #fx::after { position:absolute; left:50%; top:50%; }
   #fx::before, #fx::after { content:""; }
 
-  /* 轨道：三色霓虹轨道环（多色细线旋转，不同转速/方向） */
-  #fx.fx-orbit .ring { position:absolute; left:50%; top:50%; border-radius:50%; border:2px solid transparent; pointer-events:none; }
-  #fx.fx-orbit .ring.r1 { width:226px; height:92px; margin:-46px 0 0 -113px;
-    border-top-color:#79e2d0; border-right-color:#e36f3d;
-    box-shadow:0 0 12px #79e2d0, 0 0 22px rgba(121,226,208,.45); animation:fx-spin 3.2s linear infinite; }
-  #fx.fx-orbit .ring.r2 { width:196px; height:196px; margin:-98px 0 0 -98px;
-    border-top-color:#ff5d9e; border-left-color:#8656f6; border-bottom-color:#ffd84d;
-    box-shadow:0 0 16px #ff5d9e, 0 0 28px rgba(255,93,158,.4); animation:fx-spin 5.4s linear infinite reverse; }
-  #fx.fx-orbit .ring.r3 { width:248px; height:104px; margin:-52px 0 0 -124px;
-    border-top-color:#08c77a; border-bottom-color:#2f86ed; opacity:.75;
-    box-shadow:0 0 14px rgba(8,199,122,.5); animation:fx-spin 4.2s linear infinite; }
+  /* 轨道：两条对向绕圆球转的无接触彩虹条 */
+  #fx.fx-orbit .rainbow-ring {
+    position: absolute; left: 50%; top: 50%; border-radius: 50%;
+    pointer-events: none; will-change: transform;
+  }
+  /* 第一条彩虹条：顺时针环绕（粉-黄-绿），倾角 -24deg，粗 8px，完全悬浮在球体外围（无接触） */
+  #fx.fx-orbit .ring-1 {
+    width: 200px; height: 84px; margin: -42px 0 0 -100px;
+    border: 8px solid transparent;
+    border-top-color: #ff5d9e;
+    border-right-color: #ffd84d;
+    box-shadow: 0 0 16px rgba(255,93,158,.8), 0 0 28px rgba(255,216,77,.55);
+    animation: fx-orbit-spin-cw 3.0s linear infinite;
+  }
+  /* 第二条彩虹条：逆时针对向反向环绕（青-蓝-紫），倾角 32deg，粗 8px，独立悬浮（无接触） */
+  #fx.fx-orbit .ring-2 {
+    width: 218px; height: 96px; margin: -48px 0 0 -109px;
+    border: 8px solid transparent;
+    border-top-color: #2f86ed;
+    border-left-color: #79e2d0;
+    border-bottom-color: #8656f6;
+    box-shadow: 0 0 16px rgba(47,134,237,.8), 0 0 30px rgba(134,86,246,.55);
+    animation: fx-orbit-spin-ccw 4.2s linear infinite;
+  }
+  @keyframes fx-orbit-spin-cw {
+    0%   { transform: rotate(-24deg) rotateZ(0deg); }
+    100% { transform: rotate(-24deg) rotateZ(360deg); }
+  }
+  @keyframes fx-orbit-spin-ccw {
+    0%   { transform: rotate(32deg) rotateZ(360deg); }
+    100% { transform: rotate(32deg) rotateZ(0deg); }
+  }
 
   /* 雷达：外传波纹（涟漪向外扩散并淡出） */
   #fx.fx-radar::before, #fx.fx-radar::after { width:90px; height:90px; margin:-45px 0 0 -45px; border-radius:50%;
@@ -176,8 +197,8 @@
   #fx .fx-dots i:nth-child(3) { animation-delay:.32s; }
   @keyframes fx-dot-bounce { 0%,100%{transform:translateY(0);opacity:.35} 40%{transform:translateY(-13px);opacity:1} }
 
-  /* 数学曲线粒子尾迹（math-curve-loaders 灵感）：彩色粒子沿参数曲线游走 + 渐隐尾迹 + 呼吸 + 缓旋 */
-  #fx.fx-curve { z-index: 3; }   /* 曲线层放身体前面（粒子轨迹清晰可见） */
+  /* 数学曲线星轨条（math-curve-loaders 灵感）：彩色流光沿参数曲线游走 + 渐隐尾迹 */
+  #fx.fx-curve { z-index: 0; }   /* 曲线层放身体后面 */
   #fx.fx-curve .curve-wrap { position:absolute; left:0; top:0; width:228px; height:228px; pointer-events:none; }
   #fx.fx-curve .curve-wrap circle { will-change: cx,cy,r; }
 
@@ -289,12 +310,12 @@
   /* 动作6：感叹号竖柱与蓝球 */
   .exclaim-bar {
     position: absolute;
-    left: 98px; top: 42px;
-    width: 32px; height: 95px;
+    left: 99px; top: 26px;
+    width: 32px; height: 82px;
     border-radius: 16px 16px 14px 14px;
     background: var(--bot-color);
     box-shadow: 0 6px 18px rgba(0,0,0,0.28);
-    transform-origin: 50% 90%;
+    transform-origin: 50% 100%;
   }
   .blue-dot-pop {
     position: absolute;
@@ -334,7 +355,7 @@
 <body>
   <div class="stage" id="viewer">
     <div class="mood-tag" id="mood-tag">待机</div>
-    <div id="fx"><span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span></div>
+    <div id="fx"><span class="rainbow-ring ring-1"></span><span class="rainbow-ring ring-2"></span><span class="ripple"></span></div>
     <div id="action-fx"></div>
     <div class="bot3d" id="bot3d">
       <svg class="bot" id="bot" viewBox="-28 -28 285 285" role="img" aria-label="Sonnet Bot">
@@ -1037,53 +1058,58 @@ function spawnFirework() {
     }
   }, 540);
 }
-/* ===== 数学曲线粒子尾迹（math-curve-loaders 灵感，彩色模式） =====
-   thinking→圆形双线汇聚 / loading→玫瑰曲线 / working→利萨如曲线
-   粒子沿参数曲线游走，拖彩虹渐隐尾迹，曲线随 detailScale 呼吸胀缩 + 可选缓旋转 */
-const CURVE_COLORS = ['#ff5d9e', '#ff9800', '#ffd84d', '#08c77a', '#79e2d0', '#2f86ed', '#8656f6'];
+/* ===== 数学曲线星轨条（Star Trail Ribbon，饱满发光流光带） =====
+   两条彩虹星轨条绕圆球外圈对向高速飞驰（一条顺时针、一条逆时针）
+   头部发光星核飞驰，身后拖着饱满彩虹流光带，宽度 9px，双层璀璨星光光晕 */
+const STAR_PALETTES = {
+  rainbow1: ['#ff5d9e', '#ffd84d', '#08c77a'],
+  rainbow2: ['#2f86ed', '#79e2d0', '#8656f6', '#ff2d8b'],
+  gold: ['#ffffff', '#ffd84d', '#ff9800', '#ff5d9e'],
+  cyan: ['#ffffff', '#79e2d0', '#08c77a', '#2f86ed']
+};
 const MATH_CURVES = {
-  circle: { // 圆形双线汇聚：两条彩虹粒子链反向绕圆，相隔 180° 双向汇聚
-    strokeWidth: 2.2, rotate: false, particleCount: 48, trailSpan: 0.42, dual: true,
-    durationMs: 5200, rotationDurationMs: 28000, pulseDurationMs: 4600,
+  circle: { // 外圈正圆双向对轨星轨：两条对向绕圆球外圈转（顺时针 + 逆时针）
+    strokeWidth: 9.0, rotate: false, sampleSegments: 40, trailSpan: 0.38, dual: true,
+    durationMs: 3800, rotationDurationMs: 24000, pulseDurationMs: 4000,
     point(progress, detailScale, c) {
       const t = progress * Math.PI * 2;
       const r = c.r * detailScale;
       return { x: 114 + r * Math.cos(t), y: 114 + r * Math.sin(t) };
-    }, r: 112,   // 圆环半径 112 > 球半径 105，环绕小球边界外侧（×0.98 呼吸后仍 ≥109）
+    }, r: 112,
   },
-  rose: { // 玫瑰光环：r = Rbase + a·cos(kθ)（k=7 七瓣），环带在球边界外侧
-    strokeWidth: 2.0, rotate: true, particleCount: 64, trailSpan: 0.36,
-    durationMs: 5400, rotationDurationMs: 30000, pulseDurationMs: 4600,
+  rose: { // 外圈极光波浪双向星轨：在圆球外圈微起伏波浪，对向绕转
+    strokeWidth: 8.5, rotate: false, sampleSegments: 44, trailSpan: 0.35, dual: true,
+    durationMs: 4200, rotationDurationMs: 26000, pulseDurationMs: 4200,
     point(progress, detailScale, c) {
       const t = progress * Math.PI * 2;
       const r = (c.rbase + c.a * Math.cos(c.k * t)) * detailScale;
       return { x: 114 + r * Math.cos(t), y: 114 + r * Math.sin(t) };
-    }, rbase: 96, a: 16, k: 7,   // r ∈ [80, 112]：环带围绕小球边界
+    }, rbase: 112, a: 5, k: 6,
   },
-  lissajous: { // 利萨如光环：x=a·sin(3t)  y=b·sin(2t)（工作波形），波形环在球外
-    strokeWidth: 2.0, rotate: false, particleCount: 72, trailSpan: 0.32,
-    durationMs: 8400, rotationDurationMs: 44000, pulseDurationMs: 6800,
+  lissajous: { // 外圈立体空间双向星轨：在圆球外圈轻微俯仰，对向绕转
+    strokeWidth: 8.5, rotate: false, sampleSegments: 44, trailSpan: 0.35, dual: true,
+    durationMs: 4400, rotationDurationMs: 38000, pulseDurationMs: 5000,
     point(progress, detailScale, c) {
       const t = progress * Math.PI * 2;
-      const x = c.a * Math.sin(3 * t + 0.3) * (0.9 + 0.1 * detailScale);
-      const y = c.b * Math.sin(2 * t) * (0.9 + 0.1 * detailScale);
+      const x = (c.a * Math.cos(t) + 6 * Math.sin(3 * t)) * detailScale;
+      const y = (c.b * Math.sin(t) + 6 * Math.cos(2 * t)) * detailScale;
       return { x: 114 + x, y: 114 + y };
-    }, a: 106, b: 102,   // 上下/左右振幅 > 球半径，波形环绕球外侧
+    }, a: 112, b: 110,
   },
 };
-const FX_CURVE = {};
-let curveFx = null; // { kind, wrap, path, pts[], start, raf, cfg }
+const FX_CURVE = {
+  working: 'lissajous',
+  thinking: 'circle',
+  searching: 'rose',
+  radar: 'circle'
+};
+let curveFx = null;
+
 function curveDetailScale(time, cfg, phase) {
   const pp = ((time + phase * cfg.pulseDurationMs) % cfg.pulseDurationMs) / cfg.pulseDurationMs;
-  return 0.98 + ((Math.sin(pp * Math.PI * 2 + 0.55) + 1) / 2) * 0.02;   // 0.98~1.0 微呼吸：粒子始终在球边界外侧
+  return 0.98 + ((Math.sin(pp * Math.PI * 2 + 0.55) + 1) / 2) * 0.02;
 }
-function curveParticle(cfg, idx, progress, detailScale, count) {
-  const n = count || cfg.particleCount;
-  const tailOffset = idx / (n - 1);
-  const pt = cfg.point(normalizeProgress(progress - tailOffset * cfg.trailSpan), detailScale, cfg);
-  const fade = Math.pow(1 - tailOffset, 0.56);
-  return { x: pt.x, y: pt.y, r: 1.2 + fade * 3.2, o: 0.05 + fade * 0.95 };
-}
+
 function startCurveFx(kind) {
   stopCurveFx();
   const cfg = MATH_CURVES[kind];
@@ -1092,16 +1118,60 @@ function startCurveFx(kind) {
   const wrap = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   wrap.setAttribute('class', 'curve-wrap');
   wrap.setAttribute('viewBox', '0 0 228 228');
-  const pts = [];
-  for (let i = 0; i < (cfg.dual ? cfg.particleCount * 2 : cfg.particleCount); i++) {
-    const ci = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    const col = CURVE_COLORS[i % CURVE_COLORS.length];
-    ci.setAttribute('fill', col);
-    pts.push(ci);
-    wrap.appendChild(ci);
+
+  // Defs: 创建星轨渐变
+  const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+  const gradId1 = 'star-trail-g1-' + Math.random().toString(36).substr(2, 5);
+  const gradId2 = 'star-trail-g2-' + Math.random().toString(36).substr(2, 5);
+
+  function makeGrad(id, colors) {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+    g.setAttribute('id', id);
+    g.setAttribute('x1', '0%'); g.setAttribute('y1', '0%');
+    g.setAttribute('x2', '100%'); g.setAttribute('y2', '100%');
+    colors.forEach((col, idx) => {
+      const stop = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+      stop.setAttribute('offset', (idx / (colors.length - 1) * 100).toFixed(0) + '%');
+      stop.setAttribute('stop-color', col);
+      g.appendChild(stop);
+    });
+    return g;
   }
+  defs.appendChild(makeGrad(gradId1, STAR_PALETTES.rainbow1));
+  defs.appendChild(makeGrad(gradId2, STAR_PALETTES.rainbow2));
+  wrap.appendChild(defs);
+
+  // 创建星轨路径与星核
+  const trails = [];
+  const trailCount = cfg.dual ? 2 : 1;
+  for (let tIdx = 0; tIdx < trailCount; tIdx++) {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', `url(#${tIdx === 0 ? gradId1 : gradId2})`);
+    path.setAttribute('stroke-width', cfg.strokeWidth || 9);
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    path.style.filter = `drop-shadow(0 0 10px ${tIdx === 0 ? '#ff5d9e' : '#2f86ed'}) drop-shadow(0 0 20px rgba(255,216,77,0.5))`;
+    wrap.appendChild(path);
+
+    const coreG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const glowCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    glowCircle.setAttribute('r', '7.5');
+    glowCircle.setAttribute('fill', tIdx === 0 ? '#ffd84d' : '#79e2d0');
+    glowCircle.style.filter = `drop-shadow(0 0 8px ${tIdx === 0 ? '#ff5d9e' : '#2f86ed'})`;
+    const innerDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    innerDot.setAttribute('r', '3.8');
+    innerDot.setAttribute('fill', '#ffffff');
+    coreG.appendChild(glowCircle);
+    coreG.appendChild(innerDot);
+    wrap.appendChild(coreG);
+
+    trails.push({ path, coreG, tIdx });
+  }
+
   fxLayer.appendChild(wrap);
-  curveFx = { kind, cfg, wrap, path: null, pts, start: performance.now(), phase: Math.random(), raf: null };
+  curveFx = { kind, cfg, wrap, trails, start: performance.now(), phase: Math.random(), raf: null };
+
   const tick = (now) => {
     if (!curveFx) return;
     const t = now - curveFx.start;
@@ -1109,36 +1179,35 @@ function startCurveFx(kind) {
     const ds = curveDetailScale(t, cfg, curveFx.phase);
     const rot = cfg.rotate ? -((t % cfg.rotationDurationMs) / cfg.rotationDurationMs) * 360 : 0;
     wrap.setAttribute('transform', rot ? `rotate(${rot.toFixed(2)} 114 114)` : '');
-    if (cfg.dual) {
-      // 双线汇聚：链 A 正向走，链 B 相位 +0.5（相隔180°）反向汇聚
-      const half = Math.ceil(pts.length / 2);
-      for (let i = 0; i < pts.length; i++) {
-        const chain = i < half ? 0 : 1;
-        const j = chain === 0 ? i : i - half;
-        const prog = chain === 0 ? progress : normalizeProgress(progress + 0.5);
-        const p = curveParticle(cfg, j, prog, ds, half);
-        pts[i].setAttribute('cx', p.x.toFixed(2));
-        pts[i].setAttribute('cy', p.y.toFixed(2));
-        pts[i].setAttribute('r', p.r.toFixed(2));
-        pts[i].setAttribute('opacity', p.o.toFixed(3));
+
+    const segs = cfg.sampleSegments || 36;
+    curveFx.trails.forEach(tr => {
+      // tr.tIdx === 0 顺时针绕转，tr.tIdx === 1 逆时针对向反向绕转
+      const isReversed = tr.tIdx === 1;
+      const baseProg = isReversed ? (1 - progress) : progress;
+      const headPt = cfg.point(baseProg, ds, cfg);
+      tr.coreG.setAttribute('transform', `translate(${headPt.x.toFixed(2)}, ${headPt.y.toFixed(2)})`);
+
+      let d = '';
+      for (let s = 0; s <= segs; s++) {
+        const segProg = isReversed
+          ? normalizeProgress(baseProg + (s / segs) * cfg.trailSpan)
+          : normalizeProgress(baseProg - (s / segs) * cfg.trailSpan);
+        const pt = cfg.point(segProg, ds, cfg);
+        d += (s === 0 ? 'M' : 'L') + `${pt.x.toFixed(2)} ${pt.y.toFixed(2)} `;
       }
-    } else {
-      for (let i = 0; i < pts.length; i++) {
-        const p = curveParticle(cfg, i, progress, ds);
-        pts[i].setAttribute('cx', p.x.toFixed(2));
-        pts[i].setAttribute('cy', p.y.toFixed(2));
-        pts[i].setAttribute('r', p.r.toFixed(2));
-        pts[i].setAttribute('opacity', p.o.toFixed(3));
-      }
-    }
+      tr.path.setAttribute('d', d);
+    });
+
     curveFx.raf = requestAnimationFrame(tick);
   };
   curveFx.raf = requestAnimationFrame(tick);
 }
+
 function stopCurveFx() {
   if (!curveFx) return;
   cancelAnimationFrame(curveFx.raf);
-  curveFx.wrap.remove();
+  if (curveFx.wrap) curveFx.wrap.remove();
   fxLayer.classList.remove('fx-curve');
   curveFx = null;
 }
@@ -1625,11 +1694,11 @@ function doAction6() {
     blueDot.style.opacity = '1';
   }, 100);
 
-  // 2. 主体圆球缩小成为感叹号下方小球（隐藏眼睛），上方长条感叹号柱体落下
+  // 2. 主体圆球缩小成为感叹号下方小球（留出 33.5px 优雅间隙），上方长条感叹号柱体落下
   safeActionTimeout(() => {
     eyeFadeSpring.target = 0;
-    tinySpring.target = 0.32;
-    bodySprings.y.target = 68; // 移至感叹号底部小圆点位置
+    tinySpring.target = 0.25;
+    bodySprings.y.target = 54;
   }, 300);
 
   const exclaimBar = document.createElement('div');
