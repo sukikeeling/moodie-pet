@@ -131,7 +131,10 @@ ipcMain.on('pet:menu', () => {
       type: 'checkbox',
       checked: app.getLoginItemSettings().openAtLogin,
       click: (item) => {
-        app.setLoginItemSettings({ openAtLogin: item.checked });
+        app.setLoginItemSettings({
+          openAtLogin: item.checked,
+          args: [app.getAppPath()],
+        });
         send(item.checked ? 'autostart:on' : 'autostart:off');
       },
     },
