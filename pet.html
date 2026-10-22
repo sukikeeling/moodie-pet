@@ -358,6 +358,7 @@
     <div class="mood-tag" id="mood-tag">待机</div>
     <div id="fx"><span class="rainbow-ring ring-1"></span><span class="rainbow-ring ring-2"></span><span class="ripple"></span></div>
     <div id="action-fx"></div>
+    <div id="grok-container" style="display:none; width:230px; height:230px; margin:0 auto; position:relative; pointer-events:none; filter: drop-shadow(0 16px 14px rgba(0,0,0,.42));"></div>
     <div class="bot3d" id="bot3d">
       <svg class="bot" id="bot" viewBox="-28 -28 285 285" role="img" aria-label="Sonnet Bot">
         <defs>
@@ -427,6 +428,8 @@
 
 <script src="data.js"></script>
 <script src="morph-engine.js"></script>
+<script src="grok-recipes.js"></script>
+<script src="grok-player.bundle.js"></script>
 <script>
 "use strict";
 /* ============================================================
@@ -582,110 +585,98 @@ function applyColor(item) {
   selectedColor = item;
   if (theme !== 'grok') document.documentElement.style.setProperty('--bot-color', item[2]);
 }
-/* ===== Grok 主题状态机：黑球白眼，状态自动循环（按视频规格 + 30s 逐帧分析） =====
-   每个状态：身体形状 + 眼睛表情 + 特效；贝塞尔弹簧过渡，先变形身体再变形眼睛
-   眼睛形态绑定（视频帧分析）：竖胶囊=默认 / 横线=思考·六边形 / 圆点=惊讶 / 椭圆=常态·三角 / 大眼=兴奋 */
-const GROK_SHAPES_DEF = {
-  idle:           { shape: 'blob',      expr: [1, 10],         fx: null,           dur: [2800, 4200] },
-  thinking:       { shape: 'blob',      expr: [4, 13, 22, 15, 9], fx: null,        dur: [2000, 3400] },
-  surprised:      { shape: 'exclaim',   expr: [15, 9],         fx: 'exclaim',      dur: [900, 1400] },
-  morph_hex:      { shape: 'hex',       expr: [4, 13],         fx: null,           dur: [2200, 3200] },
-  morph_egg:      { shape: 'egg',       expr: [0, 12],         fx: null,           dur: [2200, 3200] },
-  morph_drop:     { shape: 'drop',      expr: [0, 12],         fx: null,           dur: [2200, 3200] },
-  morph_triangle: { shape: 'triangle',  expr: [0, 12, 17],     fx: 'trail',        dur: [2200, 3200] },
-  orbit:          { shape: 'blob',      expr: [1, 10],         fx: 'orbit',        dur: [2600, 3600] },
-  particles:      { shape: 'blob',      expr: [2, 11],         fx: 'burst',        dur: [1600, 2400] },
-  loading:        { shape: 'blob',      expr: [1, 10],         fx: 'dots',         dur: [1800, 2800] },
-  tiny:           { shape: 'blob',      expr: null,            fx: 'tiny',         dur: [800, 1100] },
-  excited:        { shape: 'blob',      expr: [2, 11, 20],     fx: 'orbit+burst',  dur: [2400, 3200] },
-};
-const GROK_ORDER = ['idle', 'idle', 'thinking', 'surprised', 'morph_hex', 'morph_egg', 'morph_drop', 'morph_triangle', 'orbit', 'particles', 'loading', 'tiny', 'excited', 'idle'];
+/* ===== 原版 Grok Bot 复刻引擎（逆向自 grokbot.yin.wiki） =====
+   完整的 53 状态状态机、28 个动作 Clips、原版四元数球面眼睛 SDF 投影、
+   49 stops Glow、弹性注视跟随与生命周期事件切换 */
+let grokBotInstance = null;
+let grokTimer = null;
+let grokActive = false;
+let grokIdx = 0;
 
-/* Grok 风格弹出词（极简、酷，匹配原生状态语义） */
-const GROK_LINES = {
-  idle: ['待命中', '在线', '……'],
-  thinking: ['分析中', '处理中…', '思考中'],
-  surprised: ['?!', '异常信号', '检测到变化'],
-  morph_hex: ['形态重排', '六边形模式'],
-  morph_egg: ['蛋形模式', '形态聚合'],
-  morph_drop: ['形态聚合', '水滴模式'],
-  morph_triangle: ['重构完成', '三角形模式'],
-  orbit: ['轨道扫描', '环绕运行'],
-  particles: ['能量释放', '粒子流'],
-  loading: ['加载中…', '同步中'],
-  tiny: ['压缩中', '…'],
-  excited: ['全功率', '超频模式'],
-};
-let grokActive = false, grokIdx = 0, grokTimer = null, grokEyeTimer = null, grokFxTimer = null;
-const tinySpring = new Spring(1, 190, 20, 1);          // tiny/loading 身体缩放（绕中心，果冻回弹）
-const eyeFadeSpring = new Spring(1, 170, 21, 1);      // 感叹号形态时眼睛淡出
-const grokBlueDotEl = document.querySelector('#grok-blue-dot');
-const grokDotLEl = document.querySelector('#grok-dot-l');
-const grokDotREl = document.querySelector('#grok-dot-r');
-const exclaimDotEl = document.querySelector('#exclaim-dot');
+// 精选原版高表现力核心状态序列
+const GROK_NATIVE_STATES = [
+  'idle', 'thinking', 'searching', 'coding', 'running', 'curious',
+  'playful', 'surprised', 'excited', 'shy', 'orbit', 'radar',
+  'spawning', 'loading', 'bouncing', 'happy', 'reading', 'working'
+];
 
-// 彩虹拖尾：从身体边缘甩出彩虹渐变弧线（视频特效 B）
-function spawnTrail(n = 3) {
-  for (let i = 0; i < n; i++) {
-    const s = document.createElement('span');
-    s.className = 'fx-trail';
-    const rot = Math.random() * 360;
-    s.style.left = '115px'; s.style.top = '115px';
-    s.style.setProperty('--rot', rot.toFixed(0) + 'deg');
-    s.style.setProperty('--dist', (90 + Math.random() * 70).toFixed(0) + 'px');
-    fxLayer.appendChild(s);
-    setTimeout(() => s.remove(), 900);
+const GROK_STATE_MOODS = {
+  idle: 'Grok 待机中',
+  thinking: '正在深度思考...',
+  searching: '正在全网检索...',
+  coding: '正在编写代码...',
+  running: '全速计算中...',
+  curious: '好奇地张望',
+  playful: '调皮一下~',
+  surprised: '发现新奇事物！',
+  excited: '超级兴奋！',
+  shy: '害羞中',
+  orbit: '行星轨道漫游',
+  radar: '开启雷达探测',
+  spawning: '正在孕育新点子',
+  loading: '数据加载中...',
+  bouncing: '雀跃跳动',
+  happy: '心情极好~',
+  reading: '研读长篇文档',
+  working: '专注工作中'
+};
+
+function initGrokBot() {
+  if (grokBotInstance) return;
+  const container = document.getElementById("grok-container");
+  if (!container) return;
+  
+  if (typeof window.createGrokBot !== "function") {
+    console.error("[GrokBot] createGrokBot 未就绪");
+    return;
   }
+  
+  grokBotInstance = window.createGrokBot(container, {
+    size: 230,
+    state: "idle",
+    seed: Math.floor(Math.random() * 1000) + 1,
+    follow: true,
+    data: window.__GROK_RECIPES__
+  });
 }
-function clearGrokFx() {
-  fxLayer.className = '';
-  clearInterval(grokFxTimer); grokFxTimer = null;
-  grokBlueDotEl.style.opacity = 0;
-  grokDotLEl.style.opacity = 0; grokDotREl.style.opacity = 0;
-  exclaimDotEl.style.opacity = 0;
-  tinySpring.target = 1;
-}
-function applyGrokFx(name) {
-  clearGrokFx();
-  if (!name) return;
-  if (name.includes('orbit')) fxLayer.classList.add('fx-orbit');
-  if (name.includes('trail')) { spawnTrail(4); grokFxTimer = setInterval(() => { if (!autoPaused) spawnTrail(3); }, 620); }
-  if (name.includes('burst')) { spawnBurst(14); grokFxTimer = setInterval(() => { if (!autoPaused) spawnBurst(10); }, 850); }
-  if (name === 'exclaim') { grokBlueDotEl.style.opacity = 1; eyeFadeSpring.target = 0; }
-  if (name === 'dots') { tinySpring.target = 0.5; grokDotLEl.style.opacity = 1; grokDotREl.style.opacity = 1; }
-  if (name === 'tiny') tinySpring.target = 0.14;
-}
-function grokSetState(name) {
-  const def = GROK_SHAPES_DEF[name] || GROK_SHAPES_DEF.idle;
-  startShapeMorph(def.shape);                          // 先变形身体
-  showMood(pick(GROK_LINES[name] || GROK_LINES.idle)); // 弹出词（Grok 风格）
-  clearTimeout(grokEyeTimer);
-  grokEyeTimer = setTimeout(() => {                    // 再变形眼睛（先后节奏）
-    if (def.expr && def.expr.length) chooseExpression(def.expr[Math.floor(Math.random() * def.expr.length)]);
-    eyeFadeSpring.target = 1;
-  }, 150);
-  applyGrokFx(def.fx);
-}
+
 function grokNext() {
-  if (!grokActive) return;
-  grokIdx = (grokIdx + 1) % GROK_ORDER.length;
-  const name = GROK_ORDER[grokIdx];
-  grokSetState(name);
-  const def = GROK_SHAPES_DEF[name];
-  grokTimer = setTimeout(grokNext, rand(def.dur[0], def.dur[1]));
+  if (!grokActive || !grokBotInstance) return;
+  grokIdx = (grokIdx + 1) % GROK_NATIVE_STATES.length;
+  const s = GROK_NATIVE_STATES[grokIdx];
+  grokBotInstance.setState(s);
+  showMood(GROK_STATE_MOODS[s] || s);
+  
+  const dur = (s === "idle" || s === "thinking" || s === "working")
+    ? (3500 + Math.random() * 2500)
+    : (2500 + Math.random() * 2000);
+  grokTimer = setTimeout(grokNext, dur);
 }
+
 function startGrokShow() {
   if (grokActive) return;
   grokActive = true;
-  grokIdx = -1;
-  grokNext();
+  initGrokBot();
+  const c = document.getElementById("grok-container");
+  const b = document.getElementById("bot3d");
+  if (c) c.style.display = "block";
+  if (b) b.style.display = "none";
+  
+  if (grokBotInstance) {
+    grokBotInstance.setState("idle");
+    showMood("Grok Bot 就绪");
+  }
+  grokTimer = setTimeout(grokNext, 2500);
 }
+
 function stopGrokShow() {
   if (!grokActive) return;
   grokActive = false;
-  clearTimeout(grokTimer); clearTimeout(grokEyeTimer);
-  clearGrokFx();
-  eyeFadeSpring.target = 1; tinySpring.target = 1;
+  clearTimeout(grokTimer); grokTimer = null;
+  const c = document.getElementById("grok-container");
+  const b = document.getElementById("bot3d");
+  if (c) c.style.display = "none";
+  if (b) b.style.display = "block";
 }
 
 function applyTheme(t) {
@@ -2149,13 +2140,23 @@ function endDrag() {
     }
 
     if (theme === 'grok') {
-      // Grok 主题：单击 = 切换状态
-      const name = pick(GROK_ORDER);
-      grokSetState(name);
-      clearTimeout(grokTimer);
-      const def = GROK_SHAPES_DEF[name];
-      grokTimer = setTimeout(grokNext, rand(def.dur[0], def.dur[1]));
-      showMood(pick(['嗯？', '嘿嘿', '在呢', '戳我干嘛', '双击我有变身秀✨']));
+      // Grok 主题：单击 = 触发原版 Grok 随机互动反应（眨眼/随机状态/环视）
+      if (grokBotInstance) {
+        clearTimeout(grokTimer);
+        const r = Math.random();
+        if (r < 0.4) {
+          const nextS = pick(GROK_NATIVE_STATES);
+          grokBotInstance.setState(nextS);
+          showMood(GROK_STATE_MOODS[nextS] || '切换状态');
+        } else if (r < 0.7) {
+          grokBotInstance.poke('quick');
+          showMood(pick(['哎呀戳我干嘛~', '在呢在呢！', 'Grok 受到轻戳 ✨']));
+        } else {
+          grokBotInstance.blink();
+          showMood('给你眨眨眼 (•_•)');
+        }
+        grokTimer = setTimeout(grokNext, 3000 + Math.random() * 2000);
+      }
     } else {
       // 彩色主题：单击 = 摸头撒娇 + 爱心与微弹
       reaction = { type: 'squash', t: 0, dur: 620 };
