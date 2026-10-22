@@ -31,7 +31,7 @@ let dragging = false, lastCursor = null;
 
 function createWindow() {
   const work = screen.getPrimaryDisplay().workArea;
-  const W = 250, H = 300;
+  const W = 280, H = 340;
   win = new BrowserWindow({
     width: W, height: H,
     x: work.x + work.width - W - 30,
@@ -193,3 +193,4 @@ app.whenReady().then(() => { createWindow(); startIdleWatch(); });
 app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.show(); } });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
+

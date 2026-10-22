@@ -18,7 +18,7 @@
     user-select: none;
     font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
   }
-  body { display: grid; place-items: center; cursor: grab; }
+  body { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 24px; cursor: grab; }
   body.dragging { cursor: grabbing; }
   /* 浏览器（非 Electron）打开时：纯白演示背景，方便直接预览 */
   body.web-demo { background: var(--demo-bg); }
@@ -127,7 +127,7 @@
 
   /* ===== 状态特效层（轨道激光 / 雷达波纹 / 加载弧 / 警报脉冲 / 扫描光束 + 粒子） ===== */
   #fx { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; overflow:visible; z-index:0; }
-  .bot3d { position:relative; z-index:2; }
+  .bot3d { position:relative; z-index:2; grid-area: 1 / 1; }
   #fx > span, #fx::before, #fx::after { position:absolute; left:50%; top:50%; }
   #fx::before, #fx::after { content:""; }
 
@@ -358,7 +358,7 @@
     <div class="mood-tag" id="mood-tag">待机</div>
     <div id="fx"><span class="rainbow-ring ring-1"></span><span class="rainbow-ring ring-2"></span><span class="ripple"></span></div>
     <div id="action-fx"></div>
-    <div id="grok-container" style="display:none; width:230px; height:230px; margin:0 auto; position:relative; pointer-events:none; filter: drop-shadow(0 16px 14px rgba(0,0,0,.42));"></div>
+    <div id="grok-container" style="display:none; grid-area: 1 / 1; width:230px; height:230px; position:relative; z-index:2; pointer-events:auto; filter: drop-shadow(0 16px 14px rgba(0,0,0,.42));"></div>
     <div class="bot3d" id="bot3d">
       <svg class="bot" id="bot" viewBox="-28 -28 285 285" role="img" aria-label="Sonnet Bot">
         <defs>
@@ -527,6 +527,9 @@ const PERF_PALETTE = [
   { scaleX: 1.06, scaleY: 1.06, rotate: -2 },
 ];
 const bodySprings = { y: new Spring(0, 170, 15), rotate: new Spring(0, 170, 15), scaleX: new Spring(1, 170, 15), scaleY: new Spring(1, 170, 15) };
+
+const tinySpring = new Spring(1, 190, 20, 1);
+const eyeFadeSpring = new Spring(1, 170, 21, 1);
 const bodyTilt = new Spring(0, 120, 18);
 const yawSpring = new Spring(0, 150, 16);   // 3D 转向（左右）
 const pitchSpring = new Spring(0, 150, 16); // 3D 俯仰（上下）
@@ -580,7 +583,7 @@ function getColorLine(id) {
   return pick(lines);
 }
 let selectedColor = GROKBOT_COLORS[8]; // 桃粉
-let theme = 'colorful';                 // 'colorful' 彩色可爱 | 'grok' 极简黑球白眼
+let theme = localStorage.getItem('moodie-theme') || 'colorful';                 // 'colorful' 彩色可爱 | 'grok' 极简黑球白眼
 function applyColor(item) {
   selectedColor = item;
   if (theme !== 'grok') document.documentElement.style.setProperty('--bot-color', item[2]);
@@ -681,6 +684,7 @@ function stopGrokShow() {
 
 function applyTheme(t) {
   theme = t === 'grok' ? 'grok' : 'colorful';
+  try { localStorage.setItem('moodie-theme', theme); } catch(e){}
   const root = document.documentElement.style;
   if (theme === 'grok') {
     root.setProperty('--bot-color', '#0d0d0f');
@@ -704,6 +708,7 @@ function applyTheme(t) {
 if (!(window.electronAPI && window.electronAPI.isElectron)) document.body.classList.add('web-demo');
 
 const bodyPath = document.querySelector('#shape-body-path'), clipPathEl = document.querySelector('#shape-clip-path');
+const exclaimDotEl = document.querySelector('#exclaim-dot');
 const bodyShine = document.querySelector('#body-shine');
 
 /* ===== 尺寸控制（每次缩小 1/3） + 配饰开关 ===== */
@@ -751,6 +756,7 @@ function blinkScale(now) {
 function blink() { blinkStart = performance.now(); }
 
 function frame(now) {
+    if (!window._firstFrame) { window._firstFrame = true; console.log("[FRAME] First frame rendering!"); }
   const dt = Math.min((now - last) / 1000, .1);
   last = now;
   velocity += (-14 * velocity - 49 * (morph - 1)) * dt;  // LaoA 原生弹簧参数（更快更弹）
@@ -2197,6 +2203,8 @@ applyScale(2/3);  // 默认缩小 2/3，更精致不占位
 chooseExpression(0);
 activeState = 'idle';
 showMood('Sonnet Bot 上线啦~');
+  console.log("[BOOT] Pet init complete!");
+  if (theme === 'grok') { applyTheme('grok'); }
 rafId = requestAnimationFrame(frame);
 // 尺寸按钮已移到右键菜单，悬停按钮取消
 // 启动自动轮询 + 自言自语（延迟 2s 让开场白先显示完）
@@ -2263,3 +2271,6 @@ if (window.electronAPI && window.electronAPI.onMenuAction) {
 </script>
 </body>
 </html>
+
+
+

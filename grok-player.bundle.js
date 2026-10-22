@@ -1819,7 +1819,7 @@ function createGrokBot(container, opts = {}) {
   // ---------- 初始化 ----------
   const dataPromise = opts.data != null
     ? Promise.resolve(opts.data)
-    : fetch(opts.recipesUrl ?? new URL("./grok-recipes.json", import.meta.url))
+    : fetch(opts.recipesUrl ?? "./grok-recipes.json")
         .then(r => { if (!r.ok) throw new Error(`grok-recipes.json HTTP ${r.status}`); return r.json(); });
   const readyPromise = dataPromise.then(recipes => {
     if (destroyed) return;
