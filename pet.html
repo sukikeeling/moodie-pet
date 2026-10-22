@@ -682,6 +682,16 @@ function stopGrokShow() {
   if (b) b.style.display = "block";
 }
 
+function clearAllEffects() {
+  if (typeof fxFwTimer !== 'undefined' && fxFwTimer) { clearInterval(fxFwTimer); fxFwTimer = null; }
+  if (typeof fxHeartTimer !== 'undefined' && fxHeartTimer) { clearInterval(fxHeartTimer); fxHeartTimer = null; }
+  if (typeof fxActionTimer !== 'undefined' && fxActionTimer) { clearTimeout(fxActionTimer); fxActionTimer = null; }
+  if (typeof fxTimer !== 'undefined' && fxTimer) { clearTimeout(fxTimer); fxTimer = null; }
+  const layer = document.getElementById('fx-layer');
+  if (layer) layer.innerHTML = '';
+  stopCurveFx();
+}
+
 function applyTheme(t) {
   theme = t === 'grok' ? 'grok' : 'colorful';
   try { localStorage.setItem('moodie-theme', theme); } catch(e){}
@@ -690,9 +700,13 @@ function applyTheme(t) {
     root.setProperty('--bot-color', '#0d0d0f');
     root.setProperty('--eye-color', '#ffffff');
     document.body.classList.add('grok-theme');
-    // 切到 Grok：停掉彩色 39 状态轮询，启动 Grok 11 状态循环
-    clearTimeout(stateTimer); clearTimeout(exprTimer); clearTimeout(chatterTimer);
-    stopCurveFx();               // 停掉彩色数学曲线特效层
+    // 切到 Grok：彻底清除彩色状态轮询、彩蛋大招、特效烟花
+    clearTimeout(stateTimer); stateTimer = null;
+    clearTimeout(exprTimer); exprTimer = null;
+    clearTimeout(chatterTimer); chatterTimer = null;
+    clearTimeout(actionLoopTimer); actionLoopTimer = null;
+    if (initTimer) { clearTimeout(initTimer); initTimer = null; }
+    clearAllEffects();
     startGrokShow();
   } else {
     root.setProperty('--bot-color', selectedColor[2]);
@@ -700,8 +714,10 @@ function applyTheme(t) {
     document.body.classList.remove('grok-theme');
     // 切回彩色：停掉 Grok 循环，恢复 39 状态轮询 + 形状回圆球
     stopGrokShow();
+    clearAllEffects();
     startShapeMorph('blob');
     cycleExpr(); changeState(); scheduleChatter();
+    scheduleActionLoop();
   }
 }
 // 浏览器（非 Electron）打开：纯白演示背景
@@ -2109,14 +2125,19 @@ viewer.addEventListener('pointermove', (e) => {
 });
 viewer.addEventListener('pointerleave', () => { gazeX = 0; gazeY = 0; bodyTilt.target = 0; });
 
-bot.addEventListener('pointerdown', (e) => {
+function onPetPointerDown(e) {
   if (e.button !== 0) return;
   dragging = true; moveDist = 0;
   dragYaw = yawSpring.x; dragPitch = pitchSpring.x;
   document.body.classList.add('dragging');
   if (window.electronAPI && window.electronAPI.dragStart) window.electronAPI.dragStart();
-  try { bot.setPointerCapture(e.pointerId); } catch (_) {}
-});
+  try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+}
+bot.addEventListener('pointerdown', onPetPointerDown);
+const grokContainerEl = document.querySelector('#grok-container');
+if (grokContainerEl) {
+  grokContainerEl.addEventListener('pointerdown', onPetPointerDown);
+}
 window.addEventListener('pointermove', (e) => {
   if (!dragging) return;
   moveDist += Math.abs(e.movementX) + Math.abs(e.movementY);
@@ -2189,7 +2210,7 @@ if (window.electronAPI && window.electronAPI.setIgnore) {
   document.addEventListener('mousemove', (e) => {
     if (dragging) return; // 拖动期间不切换穿透，避免中断
     const el = document.elementFromPoint(e.clientX, e.clientY);
-    const onPet = !!(el && (el.closest('#bot') || el.closest('.mood-tag') || el.closest('.size-ctrl')));
+    const onPet = !!(el && (el.closest('#bot') || el.closest('#grok-container') || el.closest('.mood-tag') || el.closest('.size-ctrl')));
     if (onPet === lastIgnore) return;
     lastIgnore = onPet;
     window.electronAPI.setIgnore(!onPet);
