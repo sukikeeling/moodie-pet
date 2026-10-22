@@ -44,7 +44,9 @@
       "pet.html",
       "data.js",
       "morph-engine.js",
-      "package.json"
+      "package.json",
+      "grok-recipes.js",
+      "grok-player.bundle.js"
     ],
     "win": {
       "icon": "build/icon.ico",
