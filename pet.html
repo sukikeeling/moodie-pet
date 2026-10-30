@@ -351,6 +351,88 @@
   @keyframes fx-bob { 0%{transform:translateY(0);opacity:0} 30%{opacity:1} 100%{transform:translateY(-34px);opacity:0} }
   @keyframes fx-burst { 0%{transform:translate(0,0) rotate(0);opacity:1} 100%{transform:translate(var(--dx,0),var(--dy,80px)) rotate(var(--rot,360deg));opacity:0} }
   @keyframes fx-twinkle { 0%{transform:scale(0) rotate(0);opacity:0} 40%{transform:scale(1.4) rotate(40deg);opacity:1} 100%{transform:scale(.2) rotate(120deg);opacity:0} }
+
+  /* ===== v2.0 新增：空闲/深夜「柔光呼吸」光晕层 ===== */
+  #fx.fx-soft-breath::before {
+    width: 196px; height: 196px; margin: -98px 0 0 -98px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,214,148,0.42) 0%, rgba(164,130,255,0.24) 52%, rgba(121,226,208,0) 76%);
+    filter: blur(8px);
+    animation: fx-soft-breath-aura 4.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  #fx.fx-soft-breath::after {
+    width: 152px; height: 152px; margin: -76px 0 0 -76px; border-radius: 50%;
+    border: 2px solid rgba(255,222,173,0.48);
+    box-shadow: 0 0 24px rgba(255,214,148,0.45), inset 0 0 18px rgba(164,130,255,0.28);
+    animation: fx-soft-breath-ring 4.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes fx-soft-breath-aura {
+    0%, 100% { transform: scale(0.86); opacity: 0.38; }
+    50%      { transform: scale(1.16); opacity: 0.92; }
+  }
+  @keyframes fx-soft-breath-ring {
+    0%, 100% { transform: scale(0.88); opacity: 0.25; }
+    50%      { transform: scale(1.08); opacity: 0.78; }
+  }
+
+  /* ===== v2.0 新增：系统/Agent 感知状态 HUD 胶囊 ===== */
+  .system-hud-pill {
+    position: absolute; bottom: -18px; left: 50%;
+    transform: translate(-50%, 0) scale(calc(0.92 * var(--inv)));
+    transform-origin: 50% 0%;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 11px; border-radius: 999px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.2px;
+    color: rgba(255,255,255,0.95);
+    background: rgba(22, 24, 34, 0.78);
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.26);
+    backdrop-filter: blur(8px);
+    white-space: nowrap; cursor: pointer; z-index: 10;
+    opacity: 0.86;
+    transition: all .28s ease;
+  }
+  .system-hud-pill:hover {
+    opacity: 1;
+    transform: translate(-50%, -1px) scale(calc(0.98 * var(--inv)));
+  }
+  .system-hud-pill .hud-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #08c77a;
+    box-shadow: 0 0 8px #08c77a;
+  }
+  .system-hud-pill[data-state="coding"] {
+    background: rgba(16, 48, 78, 0.86);
+    border-color: rgba(56, 189, 248, 0.55);
+  }
+  .system-hud-pill[data-state="coding"] .hud-dot {
+    background: #38bdf8;
+    box-shadow: 0 0 10px #38bdf8;
+    animation: hud-blink 1.1s ease-in-out infinite;
+  }
+  .system-hud-pill[data-state="error"] {
+    background: rgba(88, 18, 34, 0.90);
+    border-color: rgba(255, 71, 87, 0.7);
+  }
+  .system-hud-pill[data-state="error"] .hud-dot {
+    background: #ff4757;
+    box-shadow: 0 0 12px #ff4757;
+    animation: hud-blink 0.55s ease-in-out infinite;
+  }
+  .system-hud-pill[data-state="sleep"] {
+    background: rgba(42, 32, 68, 0.82);
+    border-color: rgba(255, 214, 148, 0.45);
+  }
+  .system-hud-pill[data-state="sleep"] .hud-dot {
+    background: #ffd694;
+    box-shadow: 0 0 10px #ffd694;
+    animation: hud-blink 3.2s ease-in-out infinite;
+  }
+  @keyframes hud-blink {
+    0%, 100% { opacity: 0.45; transform: scale(0.88); }
+    50%      { opacity: 1; transform: scale(1.22); }
+  }
 </style>
 </head>
 <body>
@@ -359,6 +441,11 @@
     <div id="fx"><span class="rainbow-ring ring-1"></span><span class="rainbow-ring ring-2"></span><span class="ripple"></span></div>
     <div id="action-fx"></div>
     <div id="grok-container" style="display:none; grid-area: 1 / 1; width:230px; height:230px; position:relative; z-index:2; pointer-events:auto; filter: drop-shadow(0 16px 14px rgba(0,0,0,.42));"></div>
+    <div id="skin3d-container" style="display:none; grid-area: 1 / 1; width:230px; height:230px; position:relative; z-index:2; pointer-events:auto;"></div>
+    <div class="system-hud-pill" id="system-hud" data-state="normal" title="点击切换系统感知模式（专注搬砖 / 异常警告 / 柔光呼吸 / 灵动伴随）">
+      <span class="hud-dot" id="hud-dot"></span>
+      <span id="hud-text">✨ 灵动伴随</span>
+    </div>
     <div class="bot3d" id="bot3d">
       <svg class="bot" id="bot" viewBox="-28 -28 285 285" role="img" aria-label="Sonnet Bot">
         <defs>
@@ -430,6 +517,7 @@
 <script src="morph-engine.js"></script>
 <script src="grok-recipes.js"></script>
 <script src="grok-player.bundle.js"></script>
+<script src="skins-3d.bundle.js"></script>
 <script>
 "use strict";
 /* ============================================================
@@ -583,10 +671,16 @@ function getColorLine(id) {
   return pick(lines);
 }
 let selectedColor = GROKBOT_COLORS[8]; // 桃粉
-let theme = localStorage.getItem('moodie-theme') || 'colorful';                 // 'colorful' 彩色可爱 | 'grok' 极简黑球白眼
+const VALID_THEMES = ['colorful', 'grok', 'ceramic', 'submarine'];
+let savedTheme = null;
+try { savedTheme = localStorage.getItem('moodie-theme'); } catch (_) {}
+let theme = VALID_THEMES.includes(savedTheme) ? savedTheme : 'colorful'; // 'colorful' | 'grok' | 'ceramic' | 'submarine'
+let currentSystemState = 'normal';
+let sysConvergeTimer = null;
+
 function applyColor(item) {
   selectedColor = item;
-  if (theme !== 'grok') document.documentElement.style.setProperty('--bot-color', item[2]);
+  if (theme === 'colorful') document.documentElement.style.setProperty('--bot-color', item[2]);
 }
 /* ===== 原版 Grok Bot 复刻引擎（逆向自 grokbot.yin.wiki） =====
    完整的 53 状态状态机、28 个动作 Clips、原版四元数球面眼睛 SDF 投影、
@@ -644,7 +738,23 @@ function initGrokBot() {
 }
 
 function grokNext() {
-  if (!grokActive || !grokBotInstance) return;
+  if (!grokActive || !grokBotInstance || autoPaused) return;
+  // 若系统感知处于锁定工作流状态，优先映射为对应 Grok 状态
+  if (currentSystemState === 'coding') {
+    grokBotInstance.setState('coding');
+    grokTimer = setTimeout(grokNext, 4500);
+    return;
+  }
+  if (currentSystemState === 'error') {
+    grokBotInstance.setState('surprised');
+    grokTimer = setTimeout(grokNext, 3500);
+    return;
+  }
+  if (currentSystemState === 'sleep') {
+    grokBotInstance.setState('idle');
+    grokTimer = setTimeout(grokNext, 5500);
+    return;
+  }
   grokIdx = (grokIdx + 1) % GROK_NATIVE_STATES.length;
   const s = GROK_NATIVE_STATES[grokIdx];
   grokBotInstance.setState(s);
@@ -662,62 +772,107 @@ function startGrokShow() {
   initGrokBot();
   const c = document.getElementById("grok-container");
   const b = document.getElementById("bot3d");
+  const s3d = document.getElementById("skin3d-container");
   if (c) c.style.display = "block";
   if (b) b.style.display = "none";
+  if (s3d) s3d.style.display = "none";
   
   if (grokBotInstance) {
     grokBotInstance.setState("idle");
     showMood("Grok Bot 就绪");
   }
+  clearTimeout(grokTimer);
   grokTimer = setTimeout(grokNext, 2500);
 }
 
 function stopGrokShow() {
-  if (!grokActive) return;
   grokActive = false;
   clearTimeout(grokTimer); grokTimer = null;
   const c = document.getElementById("grok-container");
-  const b = document.getElementById("bot3d");
   if (c) c.style.display = "none";
-  if (b) b.style.display = "block";
 }
 
 function clearAllEffects() {
+  if (typeof fxSpawnTimer !== 'undefined' && fxSpawnTimer) { clearInterval(fxSpawnTimer); fxSpawnTimer = null; }
   if (typeof fxFwTimer !== 'undefined' && fxFwTimer) { clearInterval(fxFwTimer); fxFwTimer = null; }
-  if (typeof fxHeartTimer !== 'undefined' && fxHeartTimer) { clearInterval(fxHeartTimer); fxHeartTimer = null; }
-  if (typeof fxActionTimer !== 'undefined' && fxActionTimer) { clearTimeout(fxActionTimer); fxActionTimer = null; }
-  if (typeof fxTimer !== 'undefined' && fxTimer) { clearTimeout(fxTimer); fxTimer = null; }
-  const layer = document.getElementById('fx-layer');
-  if (layer) layer.innerHTML = '';
+  if (typeof fxBurstTimer !== 'undefined' && fxBurstTimer) { clearInterval(fxBurstTimer); fxBurstTimer = null; }
+  if (typeof fxNoteTimer !== 'undefined' && fxNoteTimer) { clearInterval(fxNoteTimer); fxNoteTimer = null; }
+  if (typeof fxStarTimer !== 'undefined' && fxStarTimer) { clearInterval(fxStarTimer); fxStarTimer = null; }
+  if (typeof sysConvergeTimer !== 'undefined' && sysConvergeTimer) { clearInterval(sysConvergeTimer); sysConvergeTimer = null; }
   stopCurveFx();
+  if (typeof stopShapeShow === 'function') stopShapeShow();
+  if (typeof clearActionFx === 'function') clearActionFx();
+  if (typeof isActionPlaying !== 'undefined') isActionPlaying = false;
+  const layer = document.getElementById('fx');
+  if (layer) {
+    layer.className = '';
+    Array.from(layer.children).forEach(ch => {
+      if (!ch.classList.contains('rainbow-ring') && !ch.classList.contains('ripple')) {
+        ch.remove();
+      }
+    });
+  }
+}
+
+function stop2DPolling() {
+  clearTimeout(stateTimer); stateTimer = null;
+  clearTimeout(exprTimer); exprTimer = null;
+  clearTimeout(chatterTimer); chatterTimer = null;
+  clearTimeout(actionLoopTimer); actionLoopTimer = null;
+  if (typeof initTimer !== 'undefined' && initTimer) { clearTimeout(initTimer); initTimer = null; }
 }
 
 function applyTheme(t) {
-  theme = t === 'grok' ? 'grok' : 'colorful';
+  theme = VALID_THEMES.includes(t) ? t : 'colorful';
   try { localStorage.setItem('moodie-theme', theme); } catch(e){}
   const root = document.documentElement.style;
-  if (theme === 'grok') {
+  const bot3dEl = document.getElementById('bot3d');
+  const grokEl = document.getElementById('grok-container');
+  const skin3dEl = document.getElementById('skin3d-container');
+
+  // 先统一清理所有残余定时器与特效层，杜绝跨主题污染
+  stop2DPolling();
+  stopGrokShow();
+  clearAllEffects();
+
+  if (theme === 'ceramic' || theme === 'submarine') {
+    document.body.classList.add('grok-theme');
+    if (bot3dEl) bot3dEl.style.display = 'none';
+    if (grokEl) grokEl.style.display = 'none';
+    if (skin3dEl) {
+      skin3dEl.style.display = 'block';
+      if (window.Moodie3DSkins) {
+        window.Moodie3DSkins.mount(skin3dEl, theme);
+        window.Moodie3DSkins.setSystemState(currentSystemState);
+      }
+    }
+    showMood(theme === 'ceramic' ? '🏺 3D 骨瓷天使球已唤醒 ✨' : '🫧 深海驾驶舱全息球已上线 🌊');
+  } else if (theme === 'grok') {
+    if (window.Moodie3DSkins) window.Moodie3DSkins.unmount();
+    if (skin3dEl) skin3dEl.style.display = 'none';
     root.setProperty('--bot-color', '#0d0d0f');
     root.setProperty('--eye-color', '#ffffff');
     document.body.classList.add('grok-theme');
-    // 切到 Grok：彻底清除彩色状态轮询、彩蛋大招、特效烟花
-    clearTimeout(stateTimer); stateTimer = null;
-    clearTimeout(exprTimer); exprTimer = null;
-    clearTimeout(chatterTimer); chatterTimer = null;
-    clearTimeout(actionLoopTimer); actionLoopTimer = null;
-    if (initTimer) { clearTimeout(initTimer); initTimer = null; }
-    clearAllEffects();
     startGrokShow();
   } else {
+    if (window.Moodie3DSkins) window.Moodie3DSkins.unmount();
+    if (skin3dEl) skin3dEl.style.display = 'none';
+    if (grokEl) grokEl.style.display = 'none';
+    if (bot3dEl) bot3dEl.style.display = 'block';
     root.setProperty('--bot-color', selectedColor[2]);
     root.setProperty('--eye-color', '#fffdf7');
     document.body.classList.remove('grok-theme');
-    // 切回彩色：停掉 Grok 循环，恢复 39 状态轮询 + 形状回圆球
-    stopGrokShow();
-    clearAllEffects();
     startShapeMorph('blob');
     cycleExpr(); changeState(); scheduleChatter();
     scheduleActionLoop();
+  }
+
+  // 若当前处于系统感知特殊状态，重新应用对应的跨主题视觉特效
+  if (currentSystemState !== 'normal' && typeof renderSystemStateVisuals === 'function') {
+    renderSystemStateVisuals(currentSystemState, { silentMood: true });
+  }
+  if (window.electronAPI && window.electronAPI.syncUiState) {
+    window.electronAPI.syncUiState({ theme, systemState: currentSystemState, paused: autoPaused });
   }
 }
 // 浏览器（非 Electron）打开：纯白演示背景
@@ -893,15 +1048,12 @@ function pausePet() {
   autoPaused = true;
   cancelAnimationFrame(rafId); rafId = null;
   clearTimeout(stateTimer); clearTimeout(exprTimer); clearTimeout(blinkTimer); clearTimeout(chatterTimer); clearTimeout(tagTimer);
-  clearTimeout(sketchTimer); clearTimeout(initTimer);
-  clearInterval(fxSpawnTimer); clearInterval(fxFwTimer); clearInterval(fxBurstTimer);
-  clearInterval(fxNoteTimer); clearInterval(fxStarTimer);
-  stopCurveFx();
-  stopShapeShow();                           // 暂停时中断变形秀
+  clearTimeout(sketchTimer); clearTimeout(initTimer); clearTimeout(actionLoopTimer);
+  clearAllEffects();
   stopGrokShow();                            // 暂停时中断 Grok 状态机
-  clearActionFx();
-  isActionPlaying = false;
-  fxLayer.className = '';                       // 关掉特效层（停止合成器活动）
+  if (window.Moodie3DSkins && (theme === 'ceramic' || theme === 'submarine')) {
+    window.Moodie3DSkins.setSystemState('sleep');
+  }
   showMood('zzZ…去歇会儿');
 }
 function resumePet() {
@@ -910,8 +1062,13 @@ function resumePet() {
   autoPaused = false;
   last = performance.now();
   if (!rafId) rafId = requestAnimationFrame(frame);
-  if (theme === 'grok') startGrokShow();  // Grok 主题恢复状态机
-  cycleExpr(); changeState(); scheduleBlinkPet(); scheduleChatter();
+  if (theme === 'grok') {
+    startGrokShow();
+  } else if (theme === 'ceramic' || theme === 'submarine') {
+    if (window.Moodie3DSkins) window.Moodie3DSkins.setSystemState(currentSystemState);
+  } else {
+    cycleExpr(); changeState(); scheduleBlinkPet(); scheduleChatter(); scheduleActionLoop();
+  }
   showMood('我醒啦~');
 }
 
@@ -1233,21 +1390,45 @@ function stopCurveFx() {
 const actionLayer = document.querySelector('#action-fx');
 let isActionPlaying = false;
 let actionTimers = [];
+let actionIntervals = [];
+let actionRafs = [];
 
 function clearActionFx() {
   actionTimers.forEach(t => clearTimeout(t));
   actionTimers = [];
+  actionIntervals.forEach(iv => clearInterval(iv));
+  actionIntervals = [];
+  actionRafs.forEach(id => cancelAnimationFrame(id));
+  actionRafs = [];
   if (actionLayer) actionLayer.innerHTML = '';
   if (springGroup) {
     springGroup.style.opacity = '1';
     springGroup.style.filter = 'none';
   }
+  eyeFadeSpring.target = 1;
+  tinySpring.target = 1.0;
+  bodySprings.y.target = 0;
+  bodySprings.rotate.target = 0;
+  bodySprings.scaleX.target = 1;
+  bodySprings.scaleY.target = 1;
 }
 
 function safeActionTimeout(fn, delay) {
   const t = setTimeout(fn, delay);
   actionTimers.push(t);
   return t;
+}
+
+function safeActionInterval(fn, delay) {
+  const iv = setInterval(fn, delay);
+  actionIntervals.push(iv);
+  return iv;
+}
+
+function safeActionRaf(fn) {
+  const id = requestAnimationFrame(fn);
+  actionRafs.push(id);
+  return id;
 }
 
 // 辅助：生成单条压感蜡笔彩虹流星/弧线
@@ -1385,9 +1566,9 @@ function doAction1() {
       const ease = Math.sin(p * Math.PI / 2);
       bodySprings.rotate.target = initialRot + ease * 720;
       bodySprings.y.target = Math.sin(p * Math.PI * 4) * 6;
-      if (p < 1) requestAnimationFrame(rollTick);
+      if (p < 1) safeActionRaf(rollTick);
     }
-    requestAnimationFrame(rollTick);
+    safeActionRaf(rollTick);
 
     // 三束彩虹包裹弧线
     const rainbowBundles = [
@@ -1432,7 +1613,7 @@ function doAction2() {
   // 2. 旁边持续生成由淡到深的小球粒子汇聚融合到中心小球
   const colors = ['#ff5d9e', '#2f86ed', '#08c77a', '#ff9800', '#8656f6', '#ffd84d', '#79e2d0'];
   let count = 0;
-  const convergeInterval = setInterval(() => {
+  const convergeInterval = safeActionInterval(() => {
     if (count++ > 22 || autoPaused) {
       clearInterval(convergeInterval);
       return;
@@ -1663,9 +1844,9 @@ function doAction5() {
         setTimeout(() => dot.remove(), 600);
       }
 
-      if (elapsed < 2.0) requestAnimationFrame(moveTick);
+      if (elapsed < 2.0) safeActionRaf(moveTick);
     }
-    requestAnimationFrame(moveTick);
+    safeActionRaf(moveTick);
   }, 420);
 
   // 3. 回退归位后各部件向中心融合变回圆球
@@ -1783,10 +1964,10 @@ function doAction7() {
       // 两次弹跳正弦波
       const jumpY = -Math.abs(Math.sin(p * Math.PI * 2)) * 32 * (1 - p * 0.3);
       bodySprings.y.target = jumpY;
-      if (p < 1) requestAnimationFrame(bounceTick);
+      if (p < 1) safeActionRaf(bounceTick);
       else bodySprings.y.target = 0;
     }
-    requestAnimationFrame(bounceTick);
+    safeActionRaf(bounceTick);
   }, 280);
 
   // 3. 弹跳完成，小球放大回弹复原
@@ -1889,10 +2070,10 @@ function doAction8(targetShape, targetExpr) {
     });
 
     if (p < 1) {
-      stormRaf = requestAnimationFrame(stormTick);
+      stormRaf = safeActionRaf(stormTick);
     }
   }
-  stormRaf = requestAnimationFrame(stormTick);
+  stormRaf = safeActionRaf(stormTick);
 
   // 3. 风暴中心能量爆发 & 变身为多样形态 + 萌感表情（1050ms）
   safeActionTimeout(() => {
@@ -1974,6 +2155,7 @@ function pickDirectorAction() {
 }
 
 function scheduleAction() {
+  if (theme !== 'colorful' || currentSystemState !== 'normal') return;
   if (autoPaused || !ACTIONS.length || isActionPlaying || dragging) return;
   if (Math.random() < 0.12) pickDirectorAction()();
 }
@@ -1981,8 +2163,9 @@ function scheduleAction() {
 let actionLoopTimer = null;
 function scheduleActionLoop() {
   clearTimeout(actionLoopTimer);
+  if (theme !== 'colorful') return;
   actionLoopTimer = setTimeout(() => {
-    if (!autoPaused && !isActionPlaying && !dragging) {
+    if (theme === 'colorful' && currentSystemState === 'normal' && !autoPaused && !isActionPlaying && !dragging) {
       pickDirectorAction()();
     }
     scheduleActionLoop();
@@ -2000,6 +2183,9 @@ function setEffect(state) {
   if (dots) dots.remove();
   const ring = FX_RING[state];
   if (ring) fxLayer.classList.add(ring);
+  if (state === 'sleeping' && currentSystemState === 'sleep') {
+    fxLayer.classList.add('fx-soft-breath');
+  }
   if (FX_CURVE[state]) startCurveFx(FX_CURVE[state]);
   if (FX_DOTS.has(state)) {
     const d = document.createElement('div');
@@ -2053,21 +2239,25 @@ function pickState() {
   if (r < 0.70) return pick(DATA.GROUPS['Cycle produit']);     // 工作流
   return pick(ALL_STATES);
 }
-function petSetState(name) {
+function petSetState(name, opts = {}) {
   activeState = name;
   const pool = DATA.POOLS[name];
   if (pool && pool.length) chooseExpression(pool[Math.floor(Math.random() * pool.length)]);
   else chooseExpression(Math.floor(Math.random() * DATA.EXPRESSIONS.length)); // 容错：未知状态给随机表情
-  stateMotion(name);
-  setEffect(name);
-  if (!autoPaused && Math.random() < 0.10 && SKETCHES.length) showSketch(pick(SKETCHES));
-  else showLine(name);
+  if (theme === 'colorful') {
+    stateMotion(name);
+    setEffect(name);
+  }
+  if (!opts.silentMood) {
+    if (!autoPaused && Math.random() < 0.10 && SKETCHES.length) showSketch(pick(SKETCHES));
+    else showLine(name);
+  }
   // 庆祝：双脚连跳（烟花特效由 setEffect 负责）
-  if (name === 'celebrate') playQuickAction('celebrate');
+  if (theme === 'colorful' && name === 'celebrate') playQuickAction('celebrate');
 }
 function cycleExpr() {
   clearTimeout(exprTimer);
-  if (theme === 'grok') return;                     // Grok 主题下表情由 Grok 状态机接管
+  if (theme !== 'colorful') return;                 // 仅 2D 彩色主题启用 SVG 表情轮询
   if (autoPaused) { exprTimer = setTimeout(cycleExpr, 2000); return; }
   const pool = DATA.POOLS[activeState] || [];
   if (!pool.length) { exprTimer = setTimeout(cycleExpr, 3000); return; } // 容错
@@ -2079,8 +2269,13 @@ function cycleExpr() {
 }
 function changeState() {
   clearTimeout(stateTimer);
-  if (theme === 'grok') return;                     // Grok 主题下状态由 Grok 状态机接管
+  if (theme !== 'colorful') return;                 // 仅 2D 彩色主题启用状态轮询
   if (autoPaused) { stateTimer = setTimeout(changeState, 3000); return; }
+  // 若系统感知引擎正处于 coding / error / sleep 锁定状态，保持该状态不被随机轮询冲掉
+  if (currentSystemState !== 'normal') {
+    stateTimer = setTimeout(changeState, 6000);
+    return;
+  }
   try {
     let s; do { s = pickState(); } while (s === activeState && ALL_STATES.length > 1);
     petSetState(s);
@@ -2094,30 +2289,280 @@ function changeState() {
 function scheduleBlinkPet() {
   clearTimeout(blinkTimer);
   blinkTimer = setTimeout(() => {
-    if (!autoPaused && (theme === 'grok' || DATA.BLINK[activeState])) blink();
+    if (!autoPaused && theme === 'colorful' && DATA.BLINK[activeState]) blink();
     scheduleBlinkPet();
   }, rand(2200, 5200));
 }
 // 偶尔自言自语（工作流语句），让小脸更"活"
 function scheduleChatter() {
   clearTimeout(chatterTimer);
-  if (theme === 'grok') return;                     // Grok 极简：不自言自语
+  if (theme !== 'colorful') return;
   chatterTimer = setTimeout(() => {
-    if (!autoPaused && !dragging) showLine(activeState);
+    if (!autoPaused && !dragging && currentSystemState === 'normal') showLine(activeState);
     scheduleChatter();
   }, rand(11000, 22000));
 }
 function togglePause() {
   autoPaused = !autoPaused;
   showMood(autoPaused ? '休息中…' : '继续啦~');
+  if (window.electronAPI && window.electronAPI.syncUiState) {
+    window.electronAPI.syncUiState({ theme, systemState: currentSystemState, paused: autoPaused });
+  }
   return autoPaused;
+}
+
+/* ============================================================
+   v2.0 核心升级：系统与 Agent 感知引擎实时联动
+   - coding : 正在敲代码或长任务编译 → 进入「专注搬砖 / 向心粒子汇聚」(Action 2 + working)
+   - error  : 任务出错或进程异常     → 触发「感叹号与蓝球警告」(Action 6 + alerting)
+   - sleep  : 空闲休息或深夜时       → 切换「柔光呼吸 / 趴着打呼」(fx-soft-breath + sleeping)
+   ============================================================ */
+const systemHudEl = document.getElementById('system-hud');
+const hudTextEl = document.getElementById('hud-text');
+
+function spawnSingleConvergeParticle() {
+  if (!actionLayer || autoPaused) return;
+  const colors = ['#38bdf8', '#ff5d9e', '#08c77a', '#ffd84d', '#8656f6', '#79e2d0'];
+  const angle = Math.random() * Math.PI * 2;
+  const dist = 68 + Math.random() * 52;
+  const startX = 114 + Math.cos(angle) * dist;
+  const startY = 114 + Math.sin(angle) * dist;
+  const col = colors[Math.floor(Math.random() * colors.length)];
+  const size = 8 + Math.random() * 7;
+
+  const p = document.createElement('div');
+  p.className = 'sys-converge-particle';
+  p.style.cssText = `
+    position: absolute;
+    left: ${startX - size / 2}px; top: ${startY - size / 2}px;
+    width: ${size}px; height: ${size}px;
+    border-radius: 50%;
+    background: ${col};
+    box-shadow: 0 0 12px ${col}, 0 0 20px ${col};
+    opacity: 0.25;
+    pointer-events: none;
+    z-index: 6;
+  `;
+  actionLayer.appendChild(p);
+
+  p.animate([
+    { transform: 'translate(0, 0) scale(0.55)', opacity: 0.2 },
+    { transform: `translate(${(114 - startX) * 0.48}px, ${(114 - startY) * 0.48}px) scale(1.12)`, opacity: 0.92, offset: 0.48 },
+    { transform: `translate(${114 - startX}px, ${114 - startY}px) scale(0.25)`, opacity: 1, offset: 0.9 },
+    { transform: `translate(${114 - startX}px, ${114 - startY}px) scale(0)`, opacity: 0 }
+  ], { duration: 720, easing: 'cubic-bezier(0.4, 0.0, 0.2, 1)', fill: 'forwards' }).onfinish = () => {
+    p.remove();
+  };
+}
+
+function spawnCrossThemeErrorWarning() {
+  if (!actionLayer) return;
+  const blueDot = document.createElement('div');
+  blueDot.className = 'blue-dot-pop sys-error-blue-orb';
+  blueDot.style.left = '180px';
+  blueDot.style.top = '36px';
+  blueDot.style.zIndex = '8';
+  actionLayer.appendChild(blueDot);
+
+  const exclaimBadge = document.createElement('div');
+  exclaimBadge.className = 'fx-exclaim sys-error-exclaim';
+  exclaimBadge.textContent = '!';
+  exclaimBadge.style.cssText = `
+    position: absolute; left: 36px; top: 28px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #ff3347; color: #fff;
+    display: grid; place-items: center;
+    font-size: 18px; font-weight: 900;
+    box-shadow: 0 0 16px #ff3347; z-index: 8;
+  `;
+  actionLayer.appendChild(exclaimBadge);
+
+  safeActionTimeout(() => {
+    blueDot.remove();
+    exclaimBadge.remove();
+  }, 3200);
+}
+
+function renderSystemStateVisuals(sysState, opts = {}) {
+  if (sysConvergeTimer) {
+    clearInterval(sysConvergeTimer);
+    sysConvergeTimer = null;
+  }
+
+  if (window.Moodie3DSkins && (theme === 'ceramic' || theme === 'submarine')) {
+    window.Moodie3DSkins.setSystemState(sysState);
+  }
+
+  if (sysState === 'coding') {
+    // 正在敲代码或长任务编译：进入「专注搬砖 / 向心粒子汇聚」
+    if (theme === 'colorful') {
+      isActionPlaying = false;
+      petSetState('working', { silentMood: true });
+      doAction2(); // 触发 Action 2：向心粒子汇聚
+    } else {
+      if (theme === 'grok' && grokBotInstance) grokBotInstance.setState('coding');
+      fxLayer.className = 'fx-curve';
+      startCurveFx('lissajous');
+      for (let i = 0; i < 8; i++) {
+        setTimeout(() => spawnSingleConvergeParticle(), i * 110);
+      }
+    }
+    // 持续向心粒子脉冲，保持专注搬砖氛围
+    sysConvergeTimer = setInterval(() => {
+      if (currentSystemState !== 'coding' || autoPaused) return;
+      for (let i = 0; i < 4; i++) {
+        setTimeout(() => spawnSingleConvergeParticle(), i * 140);
+      }
+    }, 2200);
+  } else if (sysState === 'error') {
+    // 任务出错或进程异常：触发「感叹号与蓝球警告」
+    if (theme === 'colorful') {
+      isActionPlaying = false;
+      petSetState('alerting', { silentMood: true });
+      doAction6(); // 触发 Action 6：感叹号与蓝球警告
+    } else {
+      if (theme === 'grok' && grokBotInstance) grokBotInstance.setState('surprised');
+      stopCurveFx();
+      fxLayer.className = 'fx-alert';
+      spawnCrossThemeErrorWarning();
+    }
+  } else if (sysState === 'sleep') {
+    // 空闲休息或深夜时：切换「柔光呼吸 / 趴着打呼」
+    clearActionFx();
+    isActionPlaying = false;
+    stopCurveFx();
+    if (theme === 'colorful') {
+      petSetState('sleeping', { silentMood: true });
+      fxLayer.classList.add('fx-soft-breath');
+    } else {
+      if (theme === 'grok' && grokBotInstance) grokBotInstance.setState('idle');
+      fxLayer.className = 'fx-soft-breath';
+      clearInterval(fxSpawnTimer);
+      spawnFxParticle('sleeping');
+      fxSpawnTimer = setInterval(() => {
+        if (!autoPaused && currentSystemState === 'sleep') spawnFxParticle('sleeping');
+      }, 950);
+    }
+  } else {
+    // normal：恢复灵动伴随
+    fxLayer.classList.remove('fx-soft-breath', 'fx-alert');
+    if (theme === 'colorful') {
+      petSetState('idle', { silentMood: Boolean(opts.silentMood) });
+    } else if (theme === 'grok' && grokBotInstance) {
+      grokBotInstance.setState('idle');
+    } else {
+      clearAllEffects();
+    }
+  }
+}
+
+function applySystemPerception(payload) {
+  if (!payload || !payload.state) return;
+  const nextState = payload.state;
+  currentSystemState = nextState;
+
+  if (systemHudEl && hudTextEl) {
+    systemHudEl.setAttribute('data-state', nextState);
+    const badgeMap = {
+      coding: '⚡ 专注搬砖 · 向心汇聚',
+      error: '⚠️ 异常警告 · 感叹蓝球',
+      sleep: '🌙 柔光呼吸 · 趴着打呼',
+      normal: '✨ 灵动伴随'
+    };
+    const taskSuffix = payload.taskName ? ` (${payload.taskName})` : '';
+    hudTextEl.textContent = (payload.badge || badgeMap[nextState] || '✨ 灵动伴随') + taskSuffix;
+    if (payload.reason) {
+      systemHudEl.title = `${payload.reason}（点击可切换感知状态）`;
+    }
+  }
+
+  renderSystemStateVisuals(nextState);
+
+  if (payload.line) {
+    showMood(payload.line);
+  } else if (payload.reason) {
+    showMood(payload.reason);
+  }
+
+  if (window.electronAPI && window.electronAPI.syncUiState) {
+    window.electronAPI.syncUiState({
+      theme,
+      systemState: currentSystemState,
+      paused: autoPaused
+    });
+  }
+}
+
+// 点击底部 HUD 胶囊可快速循环体验三大系统感知模式 + 灵动伴随
+if (systemHudEl) {
+  systemHudEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const order = ['coding', 'error', 'sleep', 'normal'];
+    const next = order[(order.indexOf(currentSystemState) + 1) % order.length];
+    const reasonMap = {
+      coding: '⚡ 专注搬砖：向心粒子汇聚充能中！',
+      error: '⚠️ 任务异常：感叹号与蓝球警告已触发！',
+      sleep: '🌙 柔光呼吸：趴着打个呼噜 zzZ',
+      normal: '✨ 已恢复灵动伴随模式'
+    };
+    if (window.electronAPI && window.electronAPI.triggerSystemState) {
+      window.electronAPI.triggerSystemState(next, reasonMap[next]);
+    } else {
+      applySystemPerception({ state: next, reason: reasonMap[next], line: reasonMap[next] });
+      try {
+        fetch('http://127.0.0.1:17530/api/state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ state: next, reason: reasonMap[next], source: 'hud-click' })
+        }).catch(() => {});
+      } catch (_) {}
+    }
+  });
+}
+
+// 连接本地 WebSocket 感知服务 (ws://127.0.0.1:17530)，支持浏览器预览与外部 Agent 直连
+let sensorWs = null;
+let sensorWsRetryTimer = null;
+function connectSensorWebSocket() {
+  if (sensorWs && (sensorWs.readyState === WebSocket.OPEN || sensorWs.readyState === WebSocket.CONNECTING)) {
+    return;
+  }
+  try {
+    const wsPort = Number(new URLSearchParams(location.search).get('sensorPort')) || 17530;
+    sensorWs = new WebSocket(`ws://127.0.0.1:${wsPort}`);
+    sensorWs.onmessage = (ev) => {
+      try {
+        const msg = JSON.parse(ev.data);
+        if (msg.type === 'system-state') {
+          applySystemPerception(msg);
+        } else if (msg.type === 'hello' && msg.state && msg.state !== 'normal') {
+          applySystemPerception(msg);
+        }
+      } catch (_) {}
+    };
+    sensorWs.onclose = () => {
+      sensorWs = null;
+      clearTimeout(sensorWsRetryTimer);
+      sensorWsRetryTimer = setTimeout(connectSensorWebSocket, 5000);
+    };
+    sensorWs.onerror = () => {
+      try { sensorWs.close(); } catch (_) {}
+    };
+  } catch (_) {}
+}
+connectSensorWebSocket();
+
+if (window.electronAPI && window.electronAPI.onSystemState) {
+  window.electronAPI.onSystemState((payload) => {
+    applySystemPerception(payload);
+  });
 }
 
 /* ===== 视线跟随 + 点击反应 + 3D 拖动转向/移动 ===== */
 let dragging = false, moveDist = 0, dragYaw = 0, dragPitch = 0;
 
 viewer.addEventListener('pointermove', (e) => {
-  const r = bot.getBoundingClientRect();
+  const r = viewer.getBoundingClientRect();
   const dx = clamp(((e.clientX - (r.left + r.width / 2)) / r.width) * 2, -.6, .6);
   const dy = clamp(((e.clientY - (r.top + r.height / 2)) / r.height) * 2, -.6, .6);
   gazeX = dx * 22; gazeY = dy * 14;
@@ -2127,6 +2572,7 @@ viewer.addEventListener('pointerleave', () => { gazeX = 0; gazeY = 0; bodyTilt.t
 
 function onPetPointerDown(e) {
   if (e.button !== 0) return;
+  if (e.target && e.target.closest && e.target.closest('#system-hud')) return;
   dragging = true; moveDist = 0;
   dragYaw = yawSpring.x; dragPitch = pitchSpring.x;
   document.body.classList.add('dragging');
@@ -2138,6 +2584,10 @@ const grokContainerEl = document.querySelector('#grok-container');
 if (grokContainerEl) {
   grokContainerEl.addEventListener('pointerdown', onPetPointerDown);
 }
+const skin3dContainerEl = document.querySelector('#skin3d-container');
+if (skin3dContainerEl) {
+  skin3dContainerEl.addEventListener('pointerdown', onPetPointerDown);
+}
 window.addEventListener('pointermove', (e) => {
   if (!dragging) return;
   moveDist += Math.abs(e.movementX) + Math.abs(e.movementY);
@@ -2148,7 +2598,7 @@ window.addEventListener('pointermove', (e) => {
   if (window.electronAPI && window.electronAPI.dragMove) window.electronAPI.dragMove();
 });
 let clickCount = 0, clickTimer = null;
-function endDrag() {
+function endDrag(e) {
   if (!dragging) return;
   dragging = false;
   document.body.classList.remove('dragging');
@@ -2160,13 +2610,31 @@ function endDrag() {
     clickTimer = setTimeout(() => { clickCount = 0; }, 380);
 
     if (clickCount >= 2) {
-      // 双击：立即触发超炫「粒子旋转风暴变身」！
       clickCount = 0;
-      doAction8();
+      if (theme === 'colorful') {
+        // 双击：立即触发超炫「粒子旋转风暴变身」！
+        doAction8();
+      } else if (theme === 'ceramic' || theme === 'submarine') {
+        if (window.Moodie3DSkins) window.Moodie3DSkins.triggerClickReaction(e ? e.clientX : 114, e ? e.clientY : 114);
+        spawnBurst(18);
+        showMood(theme === 'ceramic' ? '🏺 骨瓷双翼流光绽放 ✨' : '🫧 全息舱全频段声呐扫描开启 🌊');
+      } else if (theme === 'grok' && grokBotInstance) {
+        grokBotInstance.setState('orbit');
+        showMood('🪐 Grok 星轨加速！');
+      }
       return;
     }
 
-    if (theme === 'grok') {
+    if (theme === 'ceramic' || theme === 'submarine') {
+      if (window.Moodie3DSkins) {
+        window.Moodie3DSkins.triggerClickReaction(e ? e.clientX : 114, e ? e.clientY : 114);
+      }
+      showMood(
+        theme === 'ceramic'
+          ? pick(['🏺 温润骨瓷为您祈福 ✨', '天使皇冠闪了一下~', '摸摸小瓷球，Bug 全退散！'])
+          : pick(['🫧 深海声呐脉冲已发射 ~', '全息舱段压力正常，航向稳定！', '咕噜噜…深海潜航伴随中 🌊'])
+      );
+    } else if (theme === 'grok') {
       // Grok 主题：单击 = 触发原版 Grok 随机互动反应（眨眼/随机状态/环视）
       if (grokBotInstance) {
         clearTimeout(grokTimer);
@@ -2210,7 +2678,15 @@ if (window.electronAPI && window.electronAPI.setIgnore) {
   document.addEventListener('mousemove', (e) => {
     if (dragging) return; // 拖动期间不切换穿透，避免中断
     const el = document.elementFromPoint(e.clientX, e.clientY);
-    const onPet = !!(el && (el.closest('#bot') || el.closest('#grok-container') || el.closest('.mood-tag') || el.closest('.size-ctrl')));
+    const onPet = !!(
+      el &&
+      (el.closest('#bot') ||
+       el.closest('#grok-container') ||
+       el.closest('#skin3d-container') ||
+       el.closest('#system-hud') ||
+       el.closest('.mood-tag') ||
+       el.closest('.size-ctrl'))
+    );
     if (onPet === lastIgnore) return;
     lastIgnore = onPet;
     window.electronAPI.setIgnore(!onPet);
@@ -2223,30 +2699,46 @@ applyColor(selectedColor);
 applyScale(2/3);  // 默认缩小 2/3，更精致不占位
 chooseExpression(0);
 activeState = 'idle';
-showMood('Sonnet Bot 上线啦~');
-  console.log("[BOOT] Pet init complete!");
-  if (theme === 'grok') { applyTheme('grok'); }
+showMood('Sonnet Bot v2.0 上线啦~');
+console.log("[BOOT] Pet init complete!");
 rafId = requestAnimationFrame(frame);
-// 尺寸按钮已移到右键菜单，悬停按钮取消
-// 启动自动轮询 + 自言自语（延迟 2s 让开场白先显示完）
+
+// 先注册 initTimer，再执行 applyTheme，杜绝非 colorful 主题启动时的定时器竞态冲突
 initTimer = setTimeout(() => {
   initTimer = null;
-  cycleExpr();
-  changeState();
-  scheduleBlinkPet();
-  scheduleActionLoop();
+  if (theme === 'colorful') {
+    cycleExpr();
+    changeState();
+    scheduleBlinkPet();
+    scheduleActionLoop();
+  }
 }, 2000);
-scheduleChatter();
+scheduleBlinkPet();
+if (theme === 'colorful') {
+  scheduleChatter();
+} else {
+  applyTheme(theme);
+}
 
 /* ===== 给菜单/外部调用的接口 ===== */
 function applyColorByHex(hex) {
   const item = GROKBOT_COLORS.find(c => c[2].toLowerCase() === hex.toLowerCase());
   if (item) applyColor(item);
-  else if (theme !== 'grok') { document.documentElement.style.setProperty('--bot-color', hex); }
+  else if (theme === 'colorful') { document.documentElement.style.setProperty('--bot-color', hex); }
 }
 window.moodiePet = {
-  nextMood: () => { const s = pick(ALL_STATES.filter(x => x !== activeState)) || pick(ALL_STATES); petSetState(s); },
+  getTheme: () => theme,
+  setTheme: (t) => applyTheme(t),
+  getSystemState: () => currentSystemState,
+  triggerSystemState: (s, reason, taskName) =>
+    applySystemPerception({ state: s, reason: reason || '', taskName: taskName || '' }),
+  nextMood: () => {
+    if (theme !== 'colorful') applyTheme('colorful');
+    const s = pick(ALL_STATES.filter(x => x !== activeState)) || pick(ALL_STATES);
+    petSetState(s);
+  },
   randomLook: () => {
+    if (theme !== 'colorful') applyTheme('colorful');
     const col = pick(GROKBOT_COLORS);
     applyColor(col);
     chooseExpression(Math.floor(Math.random() * DATA.EXPRESSIONS.length));
@@ -2260,11 +2752,30 @@ window.moodiePet = {
   idleResume: resumePet,
   quit: () => { if (window.electronAPI && window.electronAPI.quit) window.electronAPI.quit(); },
 };
+
+const THEME_LABELS = {
+  colorful: '🌈 彩色可爱风 ✓',
+  grok: '⚫ Sonnet 极简风 ✓',
+  ceramic: '🏺 3D 骨瓷天使球 ✓',
+  submarine: '🫧 深海驾驶舱全息球 ✓'
+};
+
 // Electron 右键菜单回调
 if (window.electronAPI && window.electronAPI.onMenuAction) {
   window.electronAPI.onMenuAction((action) => {
-    if (action.indexOf('theme:') === 0) { applyTheme(action.slice(6)); showMood(action.slice(6) === 'grok' ? 'Sonnet 极简风 ✓' : '彩色风 ✓'); }
+    if (action.indexOf('theme:') === 0) {
+      const targetTheme = action.slice(6);
+      applyTheme(targetTheme);
+      showMood(THEME_LABELS[targetTheme] || '切换主题 ✓');
+    }
+    else if (action === 'sys:auto-on') {
+      showMood('🔄 已开启系统工作流自动感知 ✓');
+    }
+    else if (action === 'sys:auto-off') {
+      showMood('⏸️ 已暂停自动感知（保留手动触发）');
+    }
     else if (action.indexOf('color:') === 0) {
+      if (theme !== 'colorful') applyTheme('colorful');
       const hex = action.slice(6);
       applyColorByHex(hex);
       const item = GROKBOT_COLORS.find(c => c[2].toLowerCase() === hex.toLowerCase());
@@ -2272,12 +2783,19 @@ if (window.electronAPI && window.electronAPI.onMenuAction) {
       else showMood('换上新颜色啦 ✨');
     }
     else if (action.indexOf('shape:') === 0) {
+      if (theme !== 'colorful') applyTheme('colorful');
       const sId = action.slice(6);
       applyShape(sId);
       showMood(sId === 'cloud' ? '欸？云朵！' : '变' + (selectedShape[1]) + '～');
     }
-    else if (action.indexOf('accessory:') === 0) { toggleAccessory(action.slice(10)); }
-    else if (action === 'action:storm' || action === 'particleStorm') { doAction8(); }
+    else if (action.indexOf('accessory:') === 0) {
+      if (theme !== 'colorful') applyTheme('colorful');
+      toggleAccessory(action.slice(10));
+    }
+    else if (action === 'action:storm' || action === 'particleStorm') {
+      if (theme !== 'colorful') applyTheme('colorful');
+      doAction8();
+    }
     else if (action.indexOf('size:') === 0) {
       const v = action.slice(5);
       if (v === 'minus') applyScale(petScale * 2/3);

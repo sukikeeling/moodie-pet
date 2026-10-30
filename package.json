@@ -1,7 +1,7 @@
 {
   "name": "sonnet-bot",
-  "version": "1.6.0",
-  "description": "Sonnet Bot —— 双主题桌宠：🌈 彩色可爱 + ⚫ Sonnet 极简（Grok 质感贝塞尔弹簧 morph 动画 + 8大连贯动作 + 粒子旋转风暴变身 + 胶囊 Wink 眨眼）(Electron)",
+  "version": "2.0.0",
+  "description": "Moodie Pet / Sonnet Bot v2.0 —— 系统感知伴侣 + 四大主题分身大一统（🌈 彩色可爱 / ⚫ Sonnet 极简 / 🏺 3D 骨瓷天使球 / 🫧 深海驾驶舱全息球 + 本地 HTTP/WebSocket 系统感知联动）",
   "author": "sukikeeling",
   "license": "MIT",
   "repository": {
@@ -11,6 +11,8 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "sensor": "node moodie-cli.js status",
+    "test": "node verify.js",
     "dist": "electron-builder --win portable",
     "pack": "electron-builder --dir --win portable",
     "icon": "node gen-icon.js"
@@ -21,7 +23,10 @@
     "shimeji",
     "sonnet-bot",
     "moodie",
-    "expression",
+    "system-perception",
+    "threejs",
+    "ceramic-bot",
+    "submarine-cabin-bot",
     "windows"
   ],
   "devDependencies": {
@@ -41,12 +46,16 @@
     "files": [
       "main.js",
       "preload.js",
+      "system-sensor.js",
+      "moodie-cli.js",
       "pet.html",
       "data.js",
       "morph-engine.js",
       "package.json",
       "grok-recipes.js",
-      "grok-player.bundle.js"
+      "grok-player.bundle.js",
+      "skins-3d.js",
+      "skins-3d.bundle.js"
     ],
     "win": {
       "icon": "build/icon.ico",
