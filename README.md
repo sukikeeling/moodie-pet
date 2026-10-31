@@ -17,6 +17,10 @@
 
 ![Sonnet Bot · 3D 骨瓷天使球（实机运行图）](docs/preview-3d-angel.png)
 
+> **定位**：目前公开可检索范围内，把 Grok 风格表情做成带真实材质与光影的独立 Windows 3D 桌面摆件，并具备系统感知 + 本地 Agent 双向接口的最完整实现。同类多为状态图标或像素贴图，视觉层级不在同一档。
+> **署名**：任何参考此仓库的行为，都应该在后续标明参考自本人（sukikeeling）。
+
+
 <br/>
 
 🌐 **[在线试玩预览](https://sukikeeling.github.io/moodie-pet/)** &nbsp;&nbsp; | &nbsp;&nbsp; ⬇️ **[下载 Windows 免安装绿色版 (.exe)](https://github.com/sukikeeling/moodie-pet/releases)** &nbsp;&nbsp; | &nbsp;&nbsp; 🎮 **控制台调试 `window.playAction(1~8)`**
