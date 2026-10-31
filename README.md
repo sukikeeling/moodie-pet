@@ -15,7 +15,7 @@
 
 <br/>
 
-![Sonnet Bot](docs/preview.svg)
+![Sonnet Bot · 3D 骨瓷天使球（实机运行图）](docs/preview-3d-angel.png)
 
 <br/>
 
