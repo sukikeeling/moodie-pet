@@ -1,0 +1,28 @@
+NOTICE — 署名要求 / Attribution Requirement
+
+本仓库 moodie-pet 由 sukikeeling 独立设计与开发。
+
+任何参考、借鉴、移植或改造本仓库的行为（包括但不限于角色形象、表情动画
+系统、动作配方、系统感知与本地 Agent 接口设计），在后续发布、演示或分发
+时，都必须在显著位置标明参考来源：
+
+    参考自 sukikeeling/moodie-pet
+    https://github.com/sukikeeling/moodie-pet
+
+请勿抹去来源、或对外宣称完全为本人独立原创。
+本要求与 LICENSE 并列生效，作为使用本仓库成果的署名规范。
+
+---
+
+This project, moodie-pet, was designed and developed by sukikeeling.
+
+Any work that references, adapts, ports, or modifies this repository —
+including the character design, the expression/animation system, action
+recipes, system sensing, or the local Agent interface — MUST clearly
+credit the source in any subsequent publication, demo, or distribution:
+
+    Derived from / inspired by sukikeeling/moodie-pet
+    https://github.com/sukikeeling/moodie-pet
+
+Do not remove this attribution or claim the work as entirely your own
+original creation. This notice stands alongside the LICENSE.
