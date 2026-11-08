@@ -1495,10 +1495,14 @@ function buildSubmarineHolosphereScene({ scene, engine }) {
 
       if (now - lastTelRender > 80) {
         lastTelRender = now;
-        renderSubmarineTelemetry(canvasL.getContext("2d"), "telemetry", now, currentTelemetry);
-        renderSubmarineTelemetry(canvasR.getContext("2d"), "sonar", now, currentTelemetry);
-        texL.needsUpdate = true;
-        texR.needsUpdate = true;
+        this._telParity = (this._telParity || 0) ^ 1;
+        if (this._telParity === 0) {
+          renderSubmarineTelemetry(canvasL.getContext("2d"), "telemetry", now, currentTelemetry);
+          texL.needsUpdate = true;
+        } else {
+          renderSubmarineTelemetry(canvasR.getContext("2d"), "sonar", now, currentTelemetry);
+          texR.needsUpdate = true;
+        }
       }
 
       const floatY = Math.sin(now * 0.0022) * 0.022;
@@ -1581,7 +1585,7 @@ class Moodie3DSkinManager {
       canvas,
       alpha: true,
       antialias: true,
-      powerPreference: "high-performance",
+      powerPreference: "default",
     });
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -1648,18 +1652,25 @@ class Moodie3DSkinManager {
 
   _startLoop() {
     if (this.rafId) cancelAnimationFrame(this.rafId);
+    if (!this.fpsScheduler && typeof window !== "undefined" && window.FpsScheduler) {
+      this.fpsScheduler = new window.FpsScheduler();
+    }
     const tick = (now) => {
       if (this.paused || !this.activeSkin) return;
-      const dt = Math.min((now - this.lastTime) / 1000, 0.1);
-      this.lastTime = now;
-      this.activeSkin.update(now, dt);
-      this.renderer.render(this.scene, this.camera);
+      const shouldRender = this.fpsScheduler ? this.fpsScheduler.tick(now) : true;
+      if (shouldRender) {
+        const dt = Math.min((now - this.lastTime) / 1000, 0.1);
+        this.lastTime = now;
+        this.activeSkin.update(now, dt);
+        this.renderer.render(this.scene, this.camera);
+      }
       this.rafId = requestAnimationFrame(tick);
     };
     this.rafId = requestAnimationFrame(tick);
   }
 
   setState(stateName, customLine) {
+    if (this.fpsScheduler) this.fpsScheduler.setState(stateName);
     if (this.engine) this.engine.setState(stateName, customLine);
   }
 
@@ -1685,22 +1696,27 @@ class Moodie3DSkinManager {
   }
 
   setGaze(nx, ny) {
+    if (this.fpsScheduler) this.fpsScheduler.notifyInteraction(performance.now());
     if (this.engine) this.engine.setGaze(nx, ny);
   }
 
   clearGaze() {
+    if (this.fpsScheduler) this.fpsScheduler.endInteraction();
     if (this.engine) this.engine.clearGaze();
   }
 
   setTurn(yaw, pitch) {
+    if (this.fpsScheduler) this.fpsScheduler.notifyInteraction(performance.now());
     if (this.engine) this.engine.setTurn(yaw, pitch);
   }
 
   releaseTurn() {
+    if (this.fpsScheduler) this.fpsScheduler.endInteraction();
     if (this.engine) this.engine.releaseTurn();
   }
 
   boop(line) {
+    if (this.fpsScheduler) this.fpsScheduler.notifyInteraction(performance.now());
     if (this.activeSkin) this.activeSkin.boop(line);
   }
 

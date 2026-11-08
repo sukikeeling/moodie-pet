@@ -1,7 +1,7 @@
 {
   "name": "sonnet-bot",
-  "version": "2.0.0",
-  "description": "Moodie Pet / Sonnet Bot v2.0 —— 系统感知伴侣 + 四大主题分身大一统（🌈 彩色可爱 / ⚫ Sonnet 极简 / 🏺 3D 骨瓷天使球 / 🫧 深海驾驶舱全息球 + 本地 HTTP/WebSocket 系统感知联动）",
+  "version": "2.5.0",
+  "description": "Moodie Pet / Sonnet Bot v2.5 极效美学版 —— 系统感知伴侣 + 四大主题分身大一统 + 60FPS 自适应低功耗与四时段共情引擎",
   "author": "sukikeeling",
   "license": "MIT",
   "repository": {
@@ -55,7 +55,12 @@
       "grok-recipes.js",
       "grok-player.bundle.js",
       "skins-3d.js",
-      "skins-3d.bundle.js"
+      "skins-3d.bundle.js",
+      "patch-engine.js",
+      "patch-empathy.js",
+      "patch-sensor-auth.js",
+      "particle-pool.js",
+      "fps-scheduler.js"
     ],
     "win": {
       "icon": "build/icon.ico",

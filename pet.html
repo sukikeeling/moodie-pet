@@ -518,6 +518,7 @@
 <script src="grok-recipes.js"></script>
 <script src="grok-player.bundle.js"></script>
 <script src="skins-3d.bundle.js"></script>
+<script src="patch-empathy.js"></script>
 <script>
 "use strict";
 /* ============================================================
@@ -573,7 +574,7 @@ const STATE_LINES = {
   writing:['码字中…','文思泉涌！','写点什么呢','灵感来了！'],
   sending:['消息出发！','发出去了！','走你！','已发送✓'],
   receiving:['收到新消息！','来活了！','有新东西','打开看看…'],
-  uploading:['打包上传中…','搬运中…','传到云端啦','进度 70%…'],
+  uploading:['打包上传中…','搬运中…','传到云端啦','还在搬运，别急~'],
   notifying:['叮！提醒你一下','有个新通知','注意查收哦','重要消息！'],
   alerting:['⚠️ 警报！','注意注意！','红色预警！','有情况！'],
   dragging:['哎哎别拽我','我在动呢…','轻点轻点','换个位置～'],
@@ -594,6 +595,7 @@ function showSketch(lines) {
 }
 let _lastLine = '';
 const randLine = state => {
+  if (typeof Empathy !== 'undefined') return Empathy.pickLine(state, STATE_LINES, Date.now());
   const a = STATE_LINES[state] || [stateNames[state] || state];
   let l = a[Math.floor(Math.random() * a.length)];
   for (let i = 0; i < 3 && l === _lastLine && a.length > 1; i++) l = a[Math.floor(Math.random() * a.length)];
@@ -2269,6 +2271,7 @@ function cycleExpr() {
 }
 function changeState() {
   clearTimeout(stateTimer);
+  if (typeof Empathy !== 'undefined' && Empathy.isSilent(Date.now())) { stateTimer = setTimeout(changeState, 2000); return; }
   if (theme !== 'colorful') return;                 // 仅 2D 彩色主题启用状态轮询
   if (autoPaused) { stateTimer = setTimeout(changeState, 3000); return; }
   // 若系统感知引擎正处于 coding / error / sleep 锁定状态，保持该状态不被随机轮询冲掉
@@ -2296,9 +2299,16 @@ function scheduleBlinkPet() {
 // 偶尔自言自语（工作流语句），让小脸更"活"
 function scheduleChatter() {
   clearTimeout(chatterTimer);
+  if (typeof Empathy !== 'undefined' && Empathy.isSilent(Date.now())) { chatterTimer = setTimeout(scheduleChatter, 5000); return; }
   if (theme !== 'colorful') return;
   chatterTimer = setTimeout(() => {
-    if (!autoPaused && !dragging && currentSystemState === 'normal') showLine(activeState);
+    if (!autoPaused && !dragging && currentSystemState === 'normal') {
+        if (typeof Empathy !== 'undefined') {
+            const reminder = Empathy.codingReminder(Date.now());
+            if (reminder) showMood(reminder.line);
+        }
+        showLine(activeState);
+    }
     scheduleChatter();
   }, rand(11000, 22000));
 }
@@ -2459,6 +2469,10 @@ function renderSystemStateVisuals(sysState, opts = {}) {
 function applySystemPerception(payload) {
   if (!payload || !payload.state) return;
   const nextState = payload.state;
+  if (typeof Empathy !== 'undefined') {
+    const cmd = Empathy.onSystemState(currentSystemState, nextState, Date.now());
+    if (cmd && cmd.line) showMood(cmd.line);
+  }
   currentSystemState = nextState;
 
   if (systemHudEl && hudTextEl) {

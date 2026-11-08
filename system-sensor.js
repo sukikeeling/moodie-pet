@@ -15,6 +15,12 @@ const crypto = require('crypto');
 const os = require('os');
 const { exec } = require('child_process');
 const { EventEmitter } = require('events');
+let AuthMiddleware, SensorEventBus;
+try {
+  const authModule = require('./patch-sensor-auth');
+  AuthMiddleware = authModule.AuthMiddleware;
+  SensorEventBus = authModule.SensorEventBus;
+} catch (_) {}
 
 const WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
@@ -152,6 +158,12 @@ class SystemSensorEngine extends EventEmitter {
     this.pollTimer = null;
     this.overrideTimer = null;
     this._prevCpuInfo = os.cpus();
+
+    // 2.5 增强特性：Pub/Sub 事件总线与可选 Token 鉴权
+    this.bus = SensorEventBus ? new SensorEventBus() : null;
+    this.auth = (AuthMiddleware && options.auth !== false && process.env.MOODIE_AUTH === '1')
+      ? new AuthMiddleware(typeof options.auth === 'object' ? options.auth : {})
+      : null;
   }
 
   /**
@@ -349,6 +361,7 @@ class SystemSensorEngine extends EventEmitter {
       if (this.history.length > 30) this.history.length = 30;
 
       this.emit('state-change', payload);
+      if (this.bus) this.bus.publish('state-change', payload);
       this._broadcast(payload);
     }
 
@@ -547,7 +560,11 @@ class SystemSensorEngine extends EventEmitter {
   _handleHttpRequest(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Moodie-Token, Authorization');
+
+    if (this.auth && !this.auth.handleHttpRequest(req, res)) {
+      return;
+    }
 
     if (req.method === 'OPTIONS') {
       res.writeHead(204);
@@ -632,6 +649,15 @@ class SystemSensorEngine extends EventEmitter {
   }
 
   _handleUpgrade(req, socket) {
+    if (this.auth) {
+      const authRes = this.auth.validateWsUpgrade(req);
+      if (!authRes.ok) {
+        socket.write(`HTTP/1.1 ${authRes.code} Unauthorized\r\n\r\n`);
+        socket.destroy();
+        return;
+      }
+    }
+
     const key = req.headers['sec-websocket-key'];
     if (!key) {
       socket.destroy();

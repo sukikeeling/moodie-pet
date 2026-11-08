@@ -1,15 +1,15 @@
-# 🐾 Moodie Pet / Sonnet Bot v2.0 — 系统感知伴侣 · 四主题大一统
+# 🐾 Moodie Pet / Sonnet Bot v2.5 — 极效美学版 · 系统感知伴侣
 
 <div align="center">
 
-> **从「定时表情」跃迁为「系统感知伴侣」**  
+> **从「感知伴侣」迈向「极效丝滑与深度共情」**  
+> **60FPS 满帧自适应节流 · 极效低功耗待机 · 纯几何复合 Hit-Test · 拖拽 RAF 节流**  
 > **四大主题分身（🌈 彩色可爱 / ⚫ Sonnet 极简 / 🏺 3D 骨瓷天使球 / 🫧 深海驾驶舱全息球）**  
-> **本地 HTTP REST + RFC 6455 WebSocket 实时系统与 Agent 感知引擎 (`127.0.0.1:17530`)**  
-> **8 大人工盯帧连贯动作 · 压感彩色蜡笔流星与环绕引擎 · 贝塞尔弹簧 Morph · 透明置顶 · 桌面穿透**
+> **四时段温感叙事 · 短时去重记忆 · 6 大场景暖心微剧场 · 安全感知网关与 Pub/Sub 总线**
 
-[![Version](https://img.shields.io/badge/Version-v2.0.0%20(System%20Companion)-ff5d9e?style=for-the-badge&logo=electron)](https://github.com/sukikeeling/moodie-pet/releases)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20Portable%20(.exe)-success?style=for-the-badge&logo=windows)](https://github.com/sukikeeling/moodie-pet/releases)
-[![Three.js](https://img.shields.io/badge/3D%20Engine-Three.js%20r184%20(WebGL)-000000?style=for-the-badge&logo=threedotjs)](https://github.com/sukikeeling/moodie-pet)
+[![Version](https://img.shields.io/badge/Version-v2.5.0%20(Ultra--Fluid%20Aesthetics)-ff5d9e?style=for-the-badge&logo=electron)](https://github.com/sukikeeling/moodie-pet)
+[![FPS](https://img.shields.io/badge/Performance-60FPS%20Adaptive%20Pipeline-success?style=for-the-badge)](fps-scheduler.js)
+[![Three.js](https://img.shields.io/badge/3D%20Engine-Three.js%20r184%20(WebGL)-000000?style=for-the-badge&logo=threedotjs)](skins-3d.js)
 [![Verification](https://img.shields.io/badge/Gate%20Tests-24%2F24%20PASS-brightgreen?style=for-the-badge)](verify.js)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
@@ -29,35 +29,47 @@
 
 ---
 
-## 🌟 v2.0.0 重磅跃迁：从“定时表情”到“系统感知伴侣”
+## 🌟 v2.5.0 重磅跃迁：极效美学与满帧丝滑重构
 
-过去，桌宠主要靠预设的时间间隔随机轮换表情与动作；而在 **v2.0.0** 中，Moodie Pet 正式跃迁为具有**真实环境与 Agent 生产工作流感知能力的桌面智能生命体**：
+在 **v2.5.0** 极效美学版中，Moodie Pet 完成了底座工程、渲染管线与情感交互的跨代升级，实现了在**超低内存常驻与低功耗占用下，交互保持 60 帧满帧丝滑**，并将感知能力延伸至具有温度的**四时段陪伴与深度共情**：
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────┐
 │              外部 Agent / CLI / IDE 编译任务 / 操作系统内核                 │
-│     (moodie-cli.js / HTTP POST / WebSocket / CPU差分 & 进程扫描 & 空闲检测)  │
+│  (moodie-cli.js / HTTP REST Token 鉴权 / RFC 6455 WS / Pub-Sub 事件总线)   │
 └────────────────────────────────────┬──────────────────────────────────────┘
-                                     │ 127.0.0.1:17530 (HTTP REST + RFC 6455 WS)
+                                     │ 127.0.0.1:17530 (双向感知网关 & 安全阻断)
                                      ▼
 ┌───────────────────────────────────────────────────────────────────────────┐
-│         SystemSensorEngine (system-sensor.js · 零依赖原生感知守护)         │
-│  • 自动感知：CPU 差分负载、活跃编译进程 (cargo/tsc/vite/pytest/claude...)   │
-│  • 状态归一：coding (专注搬砖) | error (异常警告) | sleep (柔光呼吸) | normal│
+│     SystemSensorEngine & Auth Gateway (零依赖原生感知守护 + Pub/Sub)      │
+│  • 自动感知：CPU 差分负载、活跃编译进程 (cargo/tsc/vite/pytest/claude/uv...) │
+│  • 安全扩展：Origin 白名单、X-Moodie-Token 鉴权、EventEmitter 事件总线     │
 └─────────────────┬──────────────────────────────────────┬──────────────────┘
                   │ Electron IPC (main.js / preload.js)  │ WebSocket 实时帧广播
                   ▼                                      ▼
 ┌───────────────────────────────────────────────────────────────────────────┐
-│                   Moodie Pet v2.0 统一渲染舞台 (pet.html)                  │
+│                   Moodie Pet v2.5 极效美学舞台 (pet.html)                  │
 │                                                                           │
 │  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │ 1. 系统感知联动调度器 (applySystemPerception & #system-hud 胶囊)     │  │
-│  │  • ⚡ coding → 动作2「向心粒子汇聚」+ working + 利萨如星轨 + 持续聚能 │  │
-│  │  • ⚠️ error  → 动作6「感叹号与蓝球警告」+ alerting 红环脉冲 + 蓝球徽章│  │
-│  │  • 🌙 sleep  → 新增 .fx-soft-breath 4.2s 暖金薰衣草柔光呼吸 + zzZ   │  │
+│  │ 1. 60FPS 极效图形与低功耗调度 (fps-scheduler.js & particle-pool.js) │  │
+│  │  • 交互档 60fps 满帧 · 陪伴档 30fps 节能 · 休眠档 12fps 极低功耗    │  │
+│  │  • 统一 SoA 粒子池：预分配 Float32Array 缓冲区，彻底淘汰 DOM 粒子重排│  │
+│  │  • 消除强制独显拉起，GPU 显存纹理与副屏错帧优化                      │  │
 │  └─────────────────────────────────────────────────────────────────────┘  │
 │  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │ 2. 四大主题分身无冲突状态机 (applyTheme · 4合1大一统)                │  │
+│  │ 2. 几何数学复合 Hit-Test (patch-engine.js · 半径智能扩充至 180)     │  │
+│  │  • 废除 elementFromPoint 高频 DOM 回流，毫秒级数学命中判定          │  │
+│  │  • 拖拽 requestAnimationFrame 帧级 IPC 节流，消除鼠标高频抖动      │  │
+│  │  • 自动解析 PORTABLE_EXECUTABLE_FILE，彻底修复绿色版开机自启路径    │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │ 3. 四时段温感与深度共情叙事微剧场 (patch-empathy.js)                │  │
+│  │  • 四时段温感：清晨暖杏 · 午后原色 · 黄昏琥珀 · 深夜低饱和          │  │
+│  │  • 纯内存短时记忆：智能过滤近 8 句台词杜绝复读，连续 coding 贴心提醒│  │
+│  │  • 6 大场景暖心微剧场：报错恢复后静默陪伴、长任务专注聚能、睡前关怀 │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │ 4. 四大主题分身统一状态机 (applyTheme · 4合1大一统)                 │  │
 │  │  • 🌈 colorful  : 26表情 × 39状态 × 8大盯帧连贯动作 × 12种几何形变   │  │
 │  │  • ⚫ grok      : Sonnet 黑球白眼四元数球面 SDF 投影 + 28 动作 Clips │  │
 │  │  • 🏺 ceramic   : Three.js 温润骨瓷球 + 扇动天使羽翼 + 24K金皇冠底座 │  │
@@ -68,40 +80,50 @@
 
 ---
 
-### 🧠 1. 深度环境感知与 Agent 工作流联动机制
+## ⚡ v2.5.0 核心升级特质
 
-内置零依赖守护模块 [`system-sensor.js`](system-sensor.js)，提供 **HTTP REST + RFC 6455 WebSocket** 双协议端点（默认 `127.0.0.1:17530`，端口冲突自动顺延），实时感知：
+### 🚀 1. 60FPS 极效图形管线与自适应功耗调度 (`fps-scheduler.js`)
+- **三档能耗节流引擎**：
+  - **交互档 60 FPS**：光标悬停、拖拽、点击互动、形态 Morph 变形或连贯动作播放时瞬间升档，确保触控丝滑跟手；
+  - **陪伴档 30 FPS**：桌面静止且 5 秒无操作自动降档，画面保持平滑正弦呼吸，渲染开销直接腰斩；
+  - **休眠档 12 FPS**：系统进入 `sleep` 状态、窗口失焦超 30s 或屏幕锁屏时，帧率深度休眠，整机能耗几乎归零；
+  - **动态平滑防抖**：升档即时生效，降档满 5 秒稳定过滤，杜绝档位临界点帧率横跳。
+- **显卡能耗优化**：移除了 3D 渲染器对独立显卡的强制唤醒策略（`powerPreference: "default"`），桌面常驻小部件优先使用核显，杜绝发热降频；深海全息球左右副屏优化为奇偶周期错帧回传。
 
-| 感知状态 | 触发条件（自动扫描 / CLI / API / 点击 HUD） | 联动视觉与动作演出 |
-| :---: | :--- | :--- |
-| **⚡ 专注搬砖<br/>(`coding`)** | 正在敲代码、IDE 活跃、长任务编译 (`cargo` / `rustc` / `tsc` / `vite` / `webpack` / `gradle` / `claude` 等) 或 CPU 高负载 | 自动触发 **动作 2：向心粒子汇聚** + `working` 状态 + 利萨如数学星轨条 + 周期性向心能量粒子脉冲 + 蓝青呼吸 HUD 胶囊 |
-| **⚠️ 异常警告<br/>(`error`)** | 任务报错、单元测试挂掉 (`pytest` / `exit code != 0`) 或捕获崩溃诊断进程 | 立即触发 **动作 6：缺口弹蓝球与感叹号** + `alerting` 红色脉冲环 `fx-alert` + 跨主题蓝球与感叹号徽章 + 红色高警 HUD 胶囊 |
-| **🌙 柔光呼吸<br/>(`sleep`)** | 系统静止满阈值（默认 3 分钟无操作）或深夜时段（23:30–06:00） | 平滑切换 **「柔光呼吸 / 趴着打呼」**（启用新增 `.fx-soft-breath` 4.2s 正弦暖金薰衣草双层柔光光晕 + `sleeping` 状态 + 漂浮 `zzZ`） |
-| **✨ 灵动伴随<br/>(`normal`)** | 系统负载平稳、无高危告警 | 恢复自由伴随与日常 39 心情池自动轮询 |
+### 🎯 2. 纯几何复合 Hit-Test 与无抖动拖拽 (`patch-engine.js`)
+- **淘汰高频 DOM 回流**：彻底废除 `document.elementFromPoint` 查询，构建轻量级纯几何碰撞模型，以 $O(1)$ 复杂度执行圆形本体 + HUD 胶囊 + 控制按钮复合判定；
+- **感知边界扩展至 180**：将有效互动感应半径扩充至 180，点击、拖动与抚摸更加宽裕包容，彻底消除 3D 透明 Canvas 四角误拦截桌面的问题；
+- **拖拽 RAF 帧级节流**：通过 `requestAnimationFrame` 门控把鼠标每秒上千次的位移信号严格归一为单帧 1 次 IPC 窗口重定位，高回报率鼠标下窗口拖拽丝滑无残影；
+- **Portable 自启路径修复**：支持识别 `PORTABLE_EXECUTABLE_FILE` 环境变量，彻底根除 Windows 绿色单文件版开机自启写入临时目录失效的顽疾；
+- **异步环形日志流**：采用内存 Ring Buffer 结合异步写流，取代主进程阻塞式 `appendFileSync`。
 
-#### 📡 命令行与外部 Agent 直连（CLI 指南）
-```bash
-# 1. 查看当前桌宠感知状态与机器遥测 (CPU/内存/活跃开发进程)
-node moodie-cli.js status
+### 🌀 3. 统一 SoA 粒子池架构 (`particle-pool.js`)
+- **彻底杜绝 DOM 粒子重排**：将原 `doAction8` 等动作中现场循环创建 42 个 `<div>` DOM 节点的做法全面替换为基于 `Float32Array` 的结构数组（SoA）预分配粒子池（容量 512）；
+- **单 Draw Call 批量驱动**：支持 `burst`（爆发）、`vortex`（对数螺旋风暴）、`converge`（向心汇聚）、`meteor`（流星雨）、`ring`（扩散环）五大经典预设，运行时零内存垃圾回收抖动（0 GC）。
 
-# 2. 外部任务或 CI 编译中触发「专注搬砖」
-node moodie-cli.js coding "正在执行 Vite 生产打包" --task="vite build"
+### 🌸 4. 四时段温感与深度共情叙事微剧场 (`patch-empathy.js`)
+- **四时段色温与专属台词**：
+  - 晨曦（05:00~11:00）：暖杏微温，元气启程；
+  - 午后（11:00~17:00）：经典原色，专注伴随；
+  - 黄昏（17:00~23:00）：琥珀柔光，放松舒缓；
+  - 深夜（23:00~05:00）：低饱和弱光晕，守护陪伴；
+- **短时去重记忆**：轻量内存记忆池智能过滤最近 8 句历史台词，告别呆板复读；
+- **6 大暖心微剧场**：
+  1. **报错恢复后**：从 `error` 恢复后静默 8 秒，仅轻声说「过去啦，歇口气」，避免情绪突变错位；
+  2. **连续编码关怀**：侦测到持续 `coding` 超过 60 分钟，温和提醒喝水放松；
+  3. **深夜深情问候**：深夜编程输出「这么晚了，我陪着你」；
+  4. **每日首次启程**：按时段给出定制问候；
+  5. **多次报错抚慰**：当日累计报错多次时自动转为温和抚慰口吻；
+  6. **入睡前小哈欠**：进入 sleep 前自然打盹。
+- **状态死键与歧义修复**：清除了历史冗余的 `focused`、`dizzy` 等未定义映射，修正固定百分比文案。
 
-# 3. 测试失败或进程异常退出触发「异常警告」
-node moodie-cli.js error "单元测试断言失败 (Exit Code 1)" --task="pytest"
-
-# 4. 夜晚工作结束触发「柔光呼吸打呼」
-node moodie-cli.js sleep "深夜静谧陪伴模式"
-
-# 5. 恢复灵动伴随
-node moodie-cli.js normal
-```
+### 🛡️ 5. 安全感知网关与生态级 Pub/Sub 总线 (`patch-sensor-auth.js`)
+- **防伪造鉴权机制**：内置 Origin 来源白名单，支持通过 `MOODIE_AUTH=1` 启用 `X-Moodie-Token` 强校验，防止局域网或未授权进程恶意注入桌宠状态；
+- **事件总线解耦**：封装基于 `EventEmitter` 的 `SensorEventBus`，支持外部 Agent、CLI 或 IDE 插件以标准发布/订阅模式监听状态流。
 
 ---
 
-### 🎨 2. 四大主题分身大一统（收拢潜水艇全息舱 & 3D 骨瓷天使球）
-
-我们将历史分支项目 `ceramic-bot-3d` 与 `submarine-cabin-bot` 的 Three.js WebGL 3D 资产完整合入主线，编译为零外部网络依赖的自包含包 [`skins-3d.bundle.js`](skins-3d.bundle.js)：
+## 🎨 四大主题分身大一统
 
 | 主题皮肤 | 呈现风格 | 核心图形资产与物理特性 |
 |---|---|---|
@@ -114,29 +136,39 @@ node moodie-cli.js normal
 
 ---
 
-## 🎬 八套人工盯帧连贯动作（含新增风暴变身）
+## 🎬 八套人工盯帧连贯动作
 
 | 动作 | 触发途径 | 连贯视觉流程（严苛对照物理节奏设计） |
 | :---: | :---: | :--- |
-| **动作 1** | 随机 / `playAction(1)` | **三角翻滚与彩虹流星包裹**：圆球 morph 变圆角三角 ➔ 右上角甩出彩色短弧蜡笔流星雨 ➔ 三角 720° 旋转翻滚 ➔ 3 束渐变彩虹弧线环绕包裹 ➔ 丝滑变回圆球并爆发粒子。 |
-| **动作 2** | `coding` 联动 / `playAction(2)` | **粒子向心汇聚与融合**：圆球缩小至中心小球 ➔ 四周 360° 空间持续生成 20+ 颗彩色粒子加速向心汇聚吞噬吸收 ➔ 弹性果冻脉冲回弹复原。 |
-| **动作 3** | 随机 / `playAction(3)` | **60° 倾角彩虹环绕**：圆球缩成小球 ➔ 自小球边缘以 60° 倾角甩出多层交错彩虹蜡笔弧线（粉紫青绿渐变）环绕 360° 旋转一周 ➔ 小球平滑放大复原。 |
-| **动作 4** | 随机 / `playAction(4)` | **三小球横排跳动与融合**：主球淡出，中央展开 3 个横排圆润小球 ➔ 依次向上弹跳呼吸（跳动小球加深放大发光，未动小球半透明淡化） ➔ 三小球向中心加速合体融回圆球。 |
-| **动作 5** | 随机 / `playAction(5)` | **警示感叹号倾斜巡弋**：主体 morph 呈现 17.7° 优雅倾斜感叹号与水滴点 ➔ 向前平滑滑动巡游并在波峰洒下流光粒子 ➔ 顺滑后退向中心融合变回圆球。 |
-| **动作 6** | `error` 联动 / `playAction(6)` | **缺口弹蓝球与感叹号警告**：右上角弹出晶莹蓝球 ➔ 主球下沉缩小与感叹号柱体组合成完整感叹号并“叮铃”左右晃动 2 次 ➔ 向中心聚拢融合复原。 |
-| **动作 7** | 随机 / `playAction(7)` | **弹性双跳与多形状轮询**：小球原地轻快弹跳两下（带落地挤压形变） ➔ 放大并开启连续形态轮询秀（`drop` → `egg` → `squircle` → `capsule` → `triangle` → `hex` → `blob`）。 |
-| **动作 8** | **桌面双击** / `playAction(8)` | **🌪️ 粒子旋转风暴变身**：4 臂对数螺旋粒子群向心加速内聚 + 身体高速自旋蓄能 ➔ 能量冲击波爆发随机变身为多样萌态（云朵、水滴、胶囊、蛋形等）与彩蛋表情！ |
+| **动作 1** | 随机 / `playAction(1)` | **三角翻滚与彩虹流星包裹**：圆球 morph 变圆角三角 ➔ 甩出彩色短弧蜡笔流星雨 ➔ 三角 720° 旋转翻滚 ➔ 渐变彩虹弧线包裹 ➔ 丝滑变回复原。 |
+| **动作 2** | `coding` 联动 / `playAction(2)` | **粒子向心汇聚与融合**：圆球缩小至中心小球 ➔ 预分配粒子池加速向心汇聚吸收 ➔ 弹性果冻脉冲回弹复原。 |
+| **动作 3** | 随机 / `playAction(3)` | **60° 倾角彩虹环绕**：圆球缩成小球 ➔ 自边缘以 60° 倾角甩出多层交错彩虹蜡笔弧线环绕 360° ➔ 平滑放大复原。 |
+| **动作 4** | 随机 / `playAction(4)` | **三小球横排跳动与融合**：主球淡出，中央展开 3 个横排小球依次向上弹跳呼吸 ➔ 向中心加速合体融回圆球。 |
+| **动作 5** | 随机 / `playAction(5)` | **警示感叹号倾斜巡弋**：主体 morph 呈现 17.7° 优雅倾斜感叹号与水滴点 ➔ 向前滑动并在波峰洒下流光粒子 ➔ 顺滑融回圆球。 |
+| **动作 6** | `error` 联动 / `playAction(6)` | **缺口弹蓝球与感叹号警告**：右上角弹出晶莹蓝球 ➔ 主球下沉缩小与感叹号组合并左右晃动 2 次 ➔ 向中心聚拢融合复原。 |
+| **动作 7** | 随机 / `playAction(7)` | **弹性双跳与多形状轮询**：原地轻快弹跳两下（带挤压形变） ➔ 开启连续形态轮询秀（`drop` → `egg` → `squircle` → `capsule` → `triangle` → `hex` → `blob`）。 |
+| **动作 8** | **桌面双击** / `playAction(8)` | **🌪️ 粒子旋转风暴变身**：4 臂对数螺旋粒子群向心加速内聚 + 高速自旋蓄能 ➔ 能量冲击波爆发随机变身与彩蛋表情！ |
 
 ---
 
-## 🛡️ 架构重构与潜在冲突清零
+## 📡 命令行与外部 Agent 直连（CLI 指南）
 
-在 v2.0 重构中，彻底排查并消除了历史上 5 大隐蔽的代码冲突与内存泄漏点：
-1. **DOM 特效层与定时器泄露清零**：全面修正 `clearAllEffects()`，规范清理所有粒子定时器，杜绝因误清空根容器而损坏静态光环；
-2. **动画帧与时间线安全纳管**：引入 `safeActionInterval` 与 `safeActionRaf`，确保在任何动作中途切换主题或接收系统急停时，弹簧和帧循环被 100% 销毁复位；
-3. **消除启动定时器竞态（Race Condition）**：重排 `initTimer` 与主题初始化时序，非 2D 彩色模式下全面阻断 2D 轮询与变形秀泄漏；
-4. **WebSocket 101 Upgrade 握手合规**：修正 RFC 6455 握手帧分隔符，彻底解决首帧数据粘连与解析失败；
-5. **桌面穿透与高分屏交互全覆盖**：穿透检测全面覆盖 `#bot`、`#grok-container`、`#skin3d-container` 与 `#system-hud`，拖拽定位基于屏幕物理坐标防漂移。
+```bash
+# 1. 查看当前桌宠感知状态与机器遥测 (CPU/内存/活跃开发进程)
+node moodie-cli.js status
+
+# 2. 外部任务或 CI 编译中触发「专注搬砖」
+node moodie-cli.js coding "正在执行生产编译构建" --task="cargo build"
+
+# 3. 测试失败或进程异常退出触发「异常警告」
+node moodie-cli.js error "单元测试断言失败 (Exit Code 1)" --task="pytest"
+
+# 4. 夜晚工作结束触发「柔光呼吸打呼」
+node moodie-cli.js sleep "深夜静谧陪伴模式"
+
+# 5. 恢复灵动伴随
+node moodie-cli.js normal
+```
 
 ---
 
@@ -151,18 +183,13 @@ node verify.js
 ### 2. 启动开发版桌宠（透明置顶桌面原生模式）
 ```bash
 npm start
+# 或直接双击运行 启动桌宠.bat
 ```
 
 ### 3. 启动纯浏览器免安装预览版（附带系统感知服务端）
 ```bash
 node server.js
 # 访问 http://127.0.0.1:8137 即可在浏览器全功能体验桌宠
-```
-
-### 4. 重新构建 Windows 免安装独立绿色执行包
-```bash
-npm run dist
-# 构建完成后将在 dist/ 目录下输出 Sonnet Bot 2.0.0.exe (约 69.7MB，内含全套离线引擎与 3D 资源)
 ```
 
 ---
@@ -178,13 +205,18 @@ moodie-pet/
 ├── pet.html                 # 桌宠核心舞台：8大连贯动作、4主题分身挂载、系统感知调度、HUD 胶囊
 ├── data.js                  # 26 表情顶点环坐标 + 39 状态心情池
 ├── morph-engine.js          # 身体形态贝塞尔弹簧变形引擎
+├── patch-engine.js          # [v2.5新增] 几何数学 Hit-Test、拖拽 RAF 节流、自启修复与异步日志
+├── patch-empathy.js         # [v2.5新增] 四时段温感感知、短时去重记忆与 6 大场景微剧场
+├── patch-sensor-auth.js     # [v2.5新增] 感知安全网关、Token 校验与 Pub/Sub 事件总线
+├── particle-pool.js         # [v2.5新增] SoA 统一预分配粒子池（5类预设，零 DOM 重排）
+├── fps-scheduler.js         # [v2.5新增] 三档自适应 FPS 调度器（60/30/12fps 智能防抖切换）
 ├── grok-recipes.js          # Sonnet/Grok 原版状态配方数据
 ├── grok-player.bundle.js    # Sonnet/Grok 四元数球面透视投影运行时
 ├── skins-3d.js              # 3D 骨瓷天使球 + 深海全息舱统一源码 (Three.js WebGL)
 ├── skins-3d.bundle.js       # 3D 独立零依赖编译包 (Three.js r184 内置打包)
 ├── server.js                # 静态预览与轻量测试 Web 服务
 ├── verify.js                # 24 项全系统自动化门禁自测套件
-└── package.json             # 项目元数据与打包发布配置 (v2.0.0)
+└── package.json             # 项目元数据与依赖配置 (v2.5.0)
 ```
 
 ---

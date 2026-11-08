@@ -2,24 +2,15 @@ const { app, BrowserWindow, ipcMain, Menu, screen, dialog, powerMonitor } = requ
 const path = require('path');
 const fs = require('fs');
 const { SystemSensorEngine } = require('./system-sensor');
+const { AsyncRingLogger, getAutostartPath } = require('./patch-engine');
 
 /* ============================================================
-   Moodie 桌宠 v2.0 · 主进程 (Sonnet Bot + 系统感知伴侣 + 四主题大一统)
-   - 单实例锁，避免重复启动
-   - 所有日志写 userData（打包后 __dirname 在只读 app.asar，写它会 EROFS 崩）
-   - 内置 SystemSensorEngine：开启本地 HTTP/WebSocket (127.0.0.1:17530) 与系统进程遥测
-   - 四大主题皮肤：🌈 彩色可爱 / ⚫ Sonnet 极简 / 🏺 3D 骨瓷天使球 / 🫧 深海驾驶舱全息球
+   Moodie 桌宠 v2.5 · 极效美学版
    ============================================================ */
 
-const LOG = path.join(app.getPath('userData'), 'moodie.log');
-function log(msg) {
-  try {
-    fs.appendFileSync(LOG, `[${new Date().toISOString()}] ${msg}\n`);
-  } catch (_) {}
-}
-try {
-  fs.writeFileSync(LOG, '');
-} catch (_) {}
+let logger = null;
+function log(msg) { if (logger) logger.log(msg); else console.log(msg); }
+
 
 process.on('uncaughtException', (err) => {
   const s = (err && err.stack) || String(err);
@@ -339,9 +330,11 @@ ipcMain.on('pet:menu', () => {
       type: 'checkbox',
       checked: app.getLoginItemSettings().openAtLogin,
       click: (item) => {
+        const exe = getAutostartPath();
         app.setLoginItemSettings({
           openAtLogin: item.checked,
-          args: [app.getAppPath()]
+          path: exe,
+          args: [exe]
         });
         send(item.checked ? 'autostart:on' : 'autostart:off');
       }
@@ -410,6 +403,9 @@ powerMonitor.on('resume', () => {
 });
 
 app.whenReady().then(async () => {
+  const LOG = path.join(app.getPath('userData'), 'moodie.log');
+  logger = new AsyncRingLogger(LOG);
+  try { fs.writeFileSync(LOG, ''); } catch (_) {}
   const started = await sensorEngine.start();
   log(`SENSOR-SERVER started: ${JSON.stringify(started)}`);
   createWindow();
