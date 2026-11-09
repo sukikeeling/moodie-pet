@@ -37,14 +37,15 @@ let lastCursor = null;
 const uiMirror = {
   theme: 'grok',
   systemState: 'normal',
-  autoSense: true,
+  autoSense: false,
   paused: false
 };
 
-// 初始化系统与 Agent 感知引擎
+// 初始化系统与 Agent 感知引擎（默认纯离线免打扰模式，0 网络端口占用，0 后台子进程扫描）
 const sensorEngine = new SystemSensorEngine({
+  offline: process.env.MOODIE_SENSOR_ENABLE !== '1',
   port: Number(process.env.MOODIE_PORT) || 17530,
-  autoSense: true
+  autoSense: process.env.MOODIE_SENSOR_ENABLE === '1'
 });
 
 sensorEngine.on('state-change', (payload) => {
@@ -213,10 +214,10 @@ ipcMain.on('pet:menu', () => {
       ]
     },
     {
-      label: '🧠 系统与 Agent 感知联动',
+      label: '🎮 系统感知与运行模式',
       submenu: [
         {
-          label: '🔄 自动感知工作流 (CPU/编译/深夜)',
+          label: sensorEngine.offline ? '🚫 纯离线免打扰模式 (已生效 · 电竞级 0 开销)' : '🔄 自动感知工作流 (CPU/编译/深夜)',
           type: 'checkbox',
           checked: sensorEngine.autoSense,
           click: (item) => {
@@ -267,7 +268,9 @@ ipcMain.on('pet:menu', () => {
         },
         { type: 'separator' },
         {
-          label: `📡 感知端口: 127.0.0.1:${sensorEngine.port} (HTTP/WS)`,
+          label: sensorEngine.offline
+            ? '🍃 状态: 纯离线免打扰运行 (0 网络 / 0 后台扫描)'
+            : `📡 感知端口: 127.0.0.1:${sensorEngine.port} (HTTP/WS)`,
           enabled: false
         }
       ]
@@ -357,6 +360,8 @@ const sendIdle = (a) => {
   if (win && !win.isDestroyed()) win.webContents.send('pet:menu-action', a);
 };
 function startIdleWatch() {
+  // 纯离线免打扰模式：彻底停止周期性光标屏幕全局坐标采样，杜绝游戏帧率抖动
+  if (sensorEngine.offline) return;
   idleLastCursor = screen.getCursorScreenPoint();
   staticSince = Date.now();
   petPaused = false;

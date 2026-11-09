@@ -2534,15 +2534,20 @@ if (systemHudEl) {
   });
 }
 
-// 连接本地 WebSocket 感知服务 (ws://127.0.0.1:17530)，支持浏览器预览与外部 Agent 直连
+// 本地 WebSocket 感知服务（纯离线优化：桌面端 Electron 环境原生优先，绝不进行无脑重试）
 let sensorWs = null;
 let sensorWsRetryTimer = null;
 function connectSensorWebSocket() {
+  // 若处于 Electron 桌面端，直接走原生 IPC 通道，彻底关闭 WebSocket 网络监听与轮询
+  if (window.electronAPI) return;
+  const paramPort = new URLSearchParams(location.search).get('sensorPort');
+  if (!paramPort) return; // 纯离线预览时不主动探测端口
+
   if (sensorWs && (sensorWs.readyState === WebSocket.OPEN || sensorWs.readyState === WebSocket.CONNECTING)) {
     return;
   }
   try {
-    const wsPort = Number(new URLSearchParams(location.search).get('sensorPort')) || 17530;
+    const wsPort = Number(paramPort) || 17530;
     sensorWs = new WebSocket(`ws://127.0.0.1:${wsPort}`);
     sensorWs.onmessage = (ev) => {
       try {
@@ -2556,8 +2561,6 @@ function connectSensorWebSocket() {
     };
     sensorWs.onclose = () => {
       sensorWs = null;
-      clearTimeout(sensorWsRetryTimer);
-      sensorWsRetryTimer = setTimeout(connectSensorWebSocket, 5000);
     };
     sensorWs.onerror = () => {
       try { sensorWs.close(); } catch (_) {}

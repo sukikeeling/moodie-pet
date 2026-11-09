@@ -126,9 +126,11 @@ const CRASH_PROCS = [
 class SystemSensorEngine extends EventEmitter {
   constructor(options = {}) {
     super();
+    // 纯离线免打扰模式（电竞级 0 后台开销）：显式 offline 或默认生产环境不指定 port 时纯离线
+    this.offline = options.offline ?? (options.port ? false : (process.env.MOODIE_SENSOR_ENABLE !== '1'));
     this.port = options.port || 17530;
     this.host = options.host || '127.0.0.1';
-    this.autoSense = options.autoSense !== false;
+    this.autoSense = !this.offline && (options.autoSense !== false);
     this.pollIntervalMs = options.pollIntervalMs || 8000;
 
     this.currentState = 'normal';
@@ -202,6 +204,10 @@ class SystemSensorEngine extends EventEmitter {
    */
   _scanProcesses() {
     return new Promise((resolve) => {
+      // 纯离线或未启用自动感知时，直接返回空结果，绝对不执行 tasklist 子进程
+      if (this.offline || !this.autoSense) {
+        return resolve({ compilers: [], editors: [], crashes: [] });
+      }
       if (process.platform === 'win32') {
         exec('tasklist /FO CSV /NH', { timeout: 3500, windowsHide: true }, (err, stdout) => {
           if (err || !stdout) return resolve({ compilers: [], editors: [], crashes: [] });
@@ -732,6 +738,9 @@ class SystemSensorEngine extends EventEmitter {
    */
   start() {
     return new Promise((resolve) => {
+      if (this.offline) {
+        return resolve({ ok: true, offline: true, port: 0, message: '纯离线模式：已停用网络端点与后台扫描' });
+      }
       if (this.server) {
         return resolve({ ok: true, port: this.port });
       }
